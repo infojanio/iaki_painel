@@ -1,0 +1,102 @@
+// src/pages/app/subcategories/SubcategoryNew.tsx
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+
+import { api } from "@/lib/axios";
+import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+
+type BannerFormData = {
+  title: string;
+  image_url?: string;
+  link?: string;
+};
+
+export function BannerNew() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<BannerFormData>();
+
+  const imageUrl = watch("image_url");
+
+  const { mutateAsync: createBanner } = useMutation({
+    mutationFn: async (data: BannerFormData) => {
+      await api.post("/banners", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["banners"] });
+      alert("✅ Cadastrado com sucesso!");
+      navigate("/banners/todos");
+    },
+  });
+
+  async function onSubmit(data: BannerFormData) {
+    await createBanner(data);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadToCloudinary(file);
+    setValue("image_url", url);
+  }
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Novo Banner</h1>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold">Nome</label>
+          <input
+            {...register("title")}
+            className="w-full border p-2 rounded"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold">
+            Imagem (740x296)
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="block mt-1"
+          />
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt="Preview"
+              className="w-32 h-32 object-cover mt-2 rounded border"
+            />
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold">Link</label>
+          <input
+            {...register("link")}
+            className="w-full border p-2 rounded"
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          {isSubmitting ? "Salvando..." : "Criar banner"}
+        </button>
+      </form>
+    </div>
+  );
+}
