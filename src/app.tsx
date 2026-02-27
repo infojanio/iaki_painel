@@ -14,7 +14,7 @@ export function App() {
   return (
     <HelmetProvider>
       <ThemeProvider defaultTheme="light" storageKey="pizzashop-theme">
-        <Helmet titleTemplate="%s | Lojas Rahdar" />
+        <Helmet titleTemplate="%s | Clube IAki" />
 
         <Toaster richColors />
 
