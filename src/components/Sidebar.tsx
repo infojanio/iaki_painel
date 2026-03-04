@@ -31,13 +31,11 @@ export function Sidebar() {
                 <NavLink to="/cities">Cidades</NavLink>
               </li>
               <li>
-                <NavLink to="/business-categories">
-                  Categorias de Negócio
-                </NavLink>
+                <NavLink to="/business-categories">Ramo de Negócio</NavLink>
               </li>
               <li>
                 <NavLink to="/business-categories-cities">
-                  Categoria ↔ Cidade
+                  Vincular ↔ Cidade/Negócio
                 </NavLink>
               </li>
               <li>

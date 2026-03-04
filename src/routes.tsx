@@ -58,6 +58,9 @@ import { BusinessCategoryEdit } from "./pages/app/businessCategory/business-cate
 import { BusinessCategoryList } from "./pages/app/businessCategory/business-category-list";
 import { BusinessCategoryNew } from "./pages/app/businessCategory/business-category-new";
 import { BusinessCategoryCityLink } from "./pages/app/businessCategoryCityLink/business-category-city-link";
+import { StoreEdit } from "./pages/app/stores/store-edit";
+import { StoreList } from "./pages/app/stores/store-list";
+import { StoreNew } from "./pages/app/stores/store-new";
 
 export const router = createBrowserRouter([
   {
@@ -137,7 +140,7 @@ export const router = createBrowserRouter([
 
       /* ================= BANNERS (SUPER_ADMIN) ================= */
       {
-        path: "banners/todos",
+        path: "banners",
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <BannerList />
@@ -145,7 +148,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "banners/novo",
+        path: "banners/new",
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <BannerNew />
@@ -153,7 +156,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "banners/editar/:id",
+        path: "banners/edit/:id",
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <BannerEdit />
@@ -163,7 +166,7 @@ export const router = createBrowserRouter([
 
       /* ================= REELS (SUPER_ADMIN) ================= */
       {
-        path: "reels/todos",
+        path: "reels",
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <ReelList />
@@ -171,7 +174,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "reels/novo",
+        path: "reels/new",
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <ReelNew />
@@ -179,7 +182,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "reels/editar/:id",
+        path: "reels/edit/:id",
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <ReelEdit />
@@ -271,6 +274,32 @@ export const router = createBrowserRouter([
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <BusinessCategoryCityLink />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= STORES (SUPER_ADMIN) ================= */
+      {
+        path: "stores",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <StoreList />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "stores/new",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <StoreNew />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "stores/edit/:id",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <StoreEdit />
           </RoleGuard>
         ),
       },

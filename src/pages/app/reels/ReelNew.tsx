@@ -8,7 +8,7 @@ import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 
 type ReelFormData = {
   title: string;
-  image_url?: string;
+  imageUrl?: string;
   link?: string;
 };
 
@@ -24,7 +24,7 @@ export function ReelNew() {
     formState: { isSubmitting },
   } = useForm<ReelFormData>();
 
-  const imageUrl = watch("image_url");
+  const imageUrl = watch("imageUrl");
 
   const { mutateAsync: createReel } = useMutation({
     mutationFn: async (data: ReelFormData) => {
@@ -45,7 +45,7 @@ export function ReelNew() {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = await uploadToCloudinary(file);
-    setValue("image_url", url);
+    setValue("imageUrl", url);
   }
 
   return (

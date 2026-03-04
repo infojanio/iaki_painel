@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
@@ -8,8 +8,14 @@ import { api } from "@/lib/axios";
 type Banner = {
   id: string;
   title: string;
-  image_url: string;
-  link?: string;
+  imageUrl: string; // 🔥 corrigido
+  link?: string | null;
+  isActive: boolean;
+  position?: number | null;
+  storeId: string;
+  store?: { id: string; name: string };
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function BannerList() {
@@ -24,25 +30,25 @@ export function BannerList() {
       const response = await api.get("/banners");
       return Array.isArray(response.data)
         ? response.data
-        : response.data?.banners ?? []; // prettier-ignore
+        : (response.data?.banners ?? []);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/banners/${id}`); // backend retorna 204
+      await api.delete(`/banners/${id}`);
     },
     onSuccess: async () => {
-      // Recarrega a lista após deletar
       await queryClient.invalidateQueries({ queryKey: ["banners"] });
     },
   });
 
   const handleDelete = async (id: string, title?: string) => {
     const ok = window.confirm(
-      `Tem certeza que deseja excluir o banner${title ? ` "${title}"` : ""}?` // eslint-ignore
+      `Tem certeza que deseja excluir o banner${title ? ` "${title}"` : ""}?`,
     );
     if (!ok) return;
+
     try {
       await deleteMutation.mutateAsync(id);
     } catch {
@@ -55,9 +61,18 @@ export function BannerList() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-semibold mb-6 text-gray-800">
-        📦 Lista de Banners
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Banners</h1>
+
+        <Link
+          to="/banners/new"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          ➕ Novo Banner
+        </Link>
+      </div>
+
+      <th></th>
 
       <div className="overflow-auto rounded-lg shadow">
         <table className="min-w-full bg-white border border-gray-200">
@@ -65,7 +80,8 @@ export function BannerList() {
             <tr>
               <th className="p-4 text-left">Imagem</th>
               <th className="p-4 text-left">Nome</th>
-              <th className="p-4 text-left">Link</th>
+              <th className="p-4 text-left">Estabelecimento</th>
+              <th className="p-4 text-left">Ativo</th>
               <th className="p-4 text-left">Ações</th>
             </tr>
           </thead>
@@ -74,26 +90,40 @@ export function BannerList() {
               const isDeleting =
                 deleteMutation.isPending &&
                 deleteMutation.variables === banner.id;
+
               return (
                 <tr key={banner.id}>
                   <td className="p-4">
-                    {banner.image_url ? (
+                    {banner.imageUrl ? (
                       <img
-                        src={banner.image_url}
+                        src={banner.imageUrl}
                         alt={banner.title}
-                        className="w-16 h-16 object-cover rounded border"
+                        className="w-20 h-12 object-cover rounded border"
                       />
                     ) : (
                       <span className="text-xs text-gray-400">Sem imagem</span>
                     )}
                   </td>
 
-                  <td className="p-4">{banner.title}</td>
-                  <td className="p-4 truncate max-w-xs">{banner.link}</td>
+                  <td className="p-4 font-medium">{banner.title}</td>
+
+                  <td className="p-4">{banner.store?.name ?? "-"}</td>
+
+                  <td className="p-4">
+                    {banner.isActive ? (
+                      <span className="text-green-600 font-semibold">
+                        Ativo
+                      </span>
+                    ) : (
+                      <span className="text-red-500 font-semibold">
+                        Inativo
+                      </span>
+                    )}
+                  </td>
 
                   <td className="p-4 flex items-center gap-3">
                     <button
-                      onClick={() => navigate(`/banners/editar/${banner.id}`)}
+                      onClick={() => navigate(`/banners/edit/${banner.id}`)}
                       className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
                     >
                       <Pencil className="w-4 h-4" /> Editar
@@ -107,7 +137,6 @@ export function BannerList() {
                           ? "text-gray-400 cursor-not-allowed"
                           : "text-red-600 hover:text-red-800"
                       }`}
-                      title="Excluir"
                     >
                       {isDeleting ? (
                         <>

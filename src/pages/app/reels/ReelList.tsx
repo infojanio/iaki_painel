@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/axios";
@@ -8,7 +8,7 @@ import { api } from "@/lib/axios";
 type Reel = {
   id: string;
   title: string;
-  image_url: string;
+  imageUrl: string;
   link?: string;
 };
 
@@ -40,7 +40,7 @@ export function ReelList() {
 
   const handleDelete = async (id: string, title?: string) => {
     const ok = window.confirm(
-      `Tem certeza que deseja excluir o reel${title ? ` "${title}"` : ""}?` // eslint-ignore
+      `Tem certeza que deseja excluir o reel${title ? ` "${title}"` : ""}?`, // eslint-ignore
     );
     if (!ok) return;
     try {
@@ -55,9 +55,17 @@ export function ReelList() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-semibold mb-6 text-gray-800">
-        📦 Lista de Reels
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Reels do instagram</h1>
+
+        <Link
+          to="/reels/new"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          ➕ Novo Reel
+        </Link>
+      </div>
+      <th></th>
 
       <div className="overflow-auto rounded-lg shadow">
         <table className="min-w-full bg-white border border-gray-200">
@@ -77,9 +85,9 @@ export function ReelList() {
               return (
                 <tr key={reel.id}>
                   <td className="p-4">
-                    {reel.image_url ? (
+                    {reel.imageUrl ? (
                       <img
-                        src={reel.image_url}
+                        src={reel.imageUrl}
                         alt={reel.title}
                         className="w-16 h-16 object-cover rounded border"
                       />
