@@ -33,7 +33,7 @@ export function ReelNew() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reels"] });
       alert("✅ Cadastrado com sucesso!");
-      navigate("/reels/todos");
+      navigate("/reels");
     },
   });
 

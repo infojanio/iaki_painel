@@ -55,7 +55,7 @@ export function ReelEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reels"] });
       alert("✅ Atualizado com sucesso!");
-      navigate("/reels/todos");
+      navigate("/reels");
     },
   });
 
