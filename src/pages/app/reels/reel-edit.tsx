@@ -8,7 +8,7 @@ import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 
 type ReelFormData = {
   title: string;
-  imageUrl?: string;
+  image_url?: string;
   link?: string;
 };
 
@@ -26,7 +26,7 @@ export function ReelEdit() {
     formState: { isSubmitting },
   } = useForm<ReelFormData>();
 
-  const imageUrl = watch("imageUrl");
+  const imageUrl = watch("image_url");
 
   // prettier-ignore
   const { data: reel, isLoading, error } = useQuery<ReelFormData>({
@@ -71,7 +71,7 @@ export function ReelEdit() {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = await uploadToCloudinary(file);
-    setValue("imageUrl", url);
+    setValue("image_url", url);
   }
 
   if (isLoading) return <p>Carregando reel...</p>;

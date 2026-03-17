@@ -24,14 +24,14 @@ import { ProductNew } from "@/pages/app/products/ProductNew";
 import { ProductEdit } from "@/pages/app/products/ProductEdit";
 
 /* ================= BANNERS ================= */
-import { BannerList } from "@/pages/app/banners/BannerList";
-import { BannerNew } from "@/pages/app/banners/BannerNew";
-import { BannerEdit } from "@/pages/app/banners/BannerEdit";
+import { BannerList } from "@/pages/app/banners/banner-list";
+import { BannerNew } from "@/pages/app/banners/banner-new";
+import { BannerEdit } from "@/pages/app/banners/banner-edit";
 
 /* ================= REELS ================= */
-import { ReelList } from "@/pages/app/reels/ReelList";
-import { ReelNew } from "@/pages/app/reels/ReelNew";
-import { ReelEdit } from "@/pages/app/reels/ReelEdit";
+import { ReelList } from "@/pages/app/reels/reel-list";
+import { ReelNew } from "@/pages/app/reels/reel-new";
+import { ReelEdit } from "@/pages/app/reels/reel-edit";
 
 /* ================= CATEGORIES ================= */
 import { CategoryList } from "@/pages/app/categories/CategoryList";
@@ -61,6 +61,7 @@ import { BusinessCategoryCityLink } from "./pages/app/businessCategoryCityLink/b
 import { StoreEdit } from "./pages/app/stores/store-edit";
 import { StoreList } from "./pages/app/stores/store-list";
 import { StoreNew } from "./pages/app/stores/store-new";
+import { StoreBusinessCategoryLinkPage } from "./pages/app/StoreBusinessCategoryLink/store-business-category-link";
 
 export const router = createBrowserRouter([
   {
@@ -274,6 +275,16 @@ export const router = createBrowserRouter([
         element: (
           <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
             <BusinessCategoryCityLink />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= VINCULAR BUSINESS-CATEGORY A CATEGORY (SUPER_ADMIN) ================= */
+      {
+        path: "store-business-categories",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <StoreBusinessCategoryLinkPage />
           </RoleGuard>
         ),
       },

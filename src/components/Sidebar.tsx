@@ -13,7 +13,7 @@ export function Sidebar() {
 
       {/* DASHBOARD */}
       <div className="mb-6">
-        <NavLink to="/dashboard" className="hover:underline">
+        <NavLink to="/" className="hover:underline">
           🏠 Dashboard
         </NavLink>
       </div>
@@ -43,7 +43,7 @@ export function Sidebar() {
               </li>
               <li>
                 <NavLink to="/store-business-categories">
-                  Loja ↔ Categoria
+                  Vincular ↔ Loja/Negócio
                 </NavLink>
               </li>
             </ul>

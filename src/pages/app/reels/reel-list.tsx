@@ -8,7 +8,7 @@ import { api } from "@/lib/axios";
 type Reel = {
   id: string;
   title: string;
-  imageUrl: string;
+  image_url: string;
   link?: string;
 };
 
@@ -85,9 +85,9 @@ export function ReelList() {
               return (
                 <tr key={reel.id}>
                   <td className="p-4">
-                    {reel.imageUrl ? (
+                    {reel.image_url ? (
                       <img
-                        src={reel.imageUrl}
+                        src={reel.image_url}
                         alt={reel.title}
                         className="w-16 h-16 object-cover rounded border"
                       />
@@ -101,7 +101,7 @@ export function ReelList() {
 
                   <td className="p-4 flex items-center gap-3">
                     <button
-                      onClick={() => navigate(`/reels/editar/${reel.id}`)}
+                      onClick={() => navigate(`/reels/edit/${reel.id}`)}
                       className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
                     >
                       <Pencil className="w-4 h-4" /> Editar
