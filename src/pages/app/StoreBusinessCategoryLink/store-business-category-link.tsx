@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/axios";
-import { getBusinessCategories } from "@/services/business-categories"; // se você já tiver
+
 import {
   deleteStoreBusinessCategory,
   linkStoreToBusinessCategory,
