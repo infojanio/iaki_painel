@@ -1,222 +1,114 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
+import { useEffect, useState } from "react";
 import { api } from "@/lib/axios";
-
+import { getBusinessCategories } from "@/services/business-categories";
 import {
-  deleteStoreBusinessCategory,
+  getStoreBusinessCategoriesByCategory,
   linkStoreToBusinessCategory,
-  listStoreBusinessCategories,
-  StoreBusinessCategoryLink,
 } from "@/services/store-business-category";
 
-type Store = {
-  id: string;
-  name: string;
-};
-
-type BusinessCategory = {
-  id: string;
-  name: string;
-  image?: string | null;
-};
-
 export function StoreBusinessCategoryLinkPage() {
-  const queryClient = useQueryClient();
+  const [stores, setStores] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [categoryId, setCategoryId] = useState("");
   const [storeId, setStoreId] = useState("");
+  const [linkedStores, setLinkedStores] = useState<any[]>([]);
 
-  // ✅ Lojas
-  const { data: stores, isLoading: isLoadingStores } = useQuery<Store[]>({
-    queryKey: ["stores"],
-    queryFn: async () => {
-      const { data } = await api.get("/stores");
-      return Array.isArray(data) ? data : (data?.stores ?? []);
-    },
-  });
+  async function loadInitial() {
+    const { data: storesData } = await api.get("/stores");
+    const categoriesData = await getBusinessCategories();
 
-  // ✅ Categorias de negócio
-  const { data: categories, isLoading: isLoadingCategories } = useQuery<
-    BusinessCategory[]
-  >({
-    queryKey: ["business-categories"],
-    queryFn: async () => {
-      // Se você já tem service, pode usar ele:
-      // return await getBusinessCategories();
+    setStores(
+      Array.isArray(storesData) ? storesData : (storesData?.stores ?? []),
+    );
+    setCategories(categoriesData);
+  }
 
-      const { data } = await api.get("/business-categories");
-      return Array.isArray(data) ? data : (data?.businessCategories ?? []);
-    },
-  });
+  async function loadLinked(categoryId: string) {
+    const data = await getStoreBusinessCategoriesByCategory(categoryId);
+    setLinkedStores(data);
+  }
 
-  // ✅ Vínculos (store ↔ category)
-  const { data: links, isLoading: isLoadingLinks } = useQuery<
-    StoreBusinessCategoryLink[]
-  >({
-    queryKey: ["store-business-categories"],
-    queryFn: listStoreBusinessCategories,
-  });
+  useEffect(() => {
+    loadInitial();
+  }, []);
 
-  // ✅ Vínculos da loja selecionada
-  const storeLinks = useMemo(() => {
-    if (!storeId) return [];
-    return (links ?? []).filter((l) => l.storeId === storeId);
-  }, [links, storeId]);
+  useEffect(() => {
+    if (categoryId) {
+      loadLinked(categoryId);
+    }
+  }, [categoryId]);
 
-  // ✅ Map para lookup rápido: categoryId -> linkId
-  const linkIdByCategoryId = useMemo(() => {
-    const map = new Map<string, string>();
-    storeLinks.forEach((l) => map.set(l.categoryId, l.id));
-    return map;
-  }, [storeLinks]);
+  async function handleLink(e: React.FormEvent) {
+    e.preventDefault();
 
-  // ✅ Vincular
-  const linkMutation = useMutation({
-    mutationFn: async (categoryId: string) => {
-      if (!storeId) throw new Error("Selecione uma loja.");
-      await linkStoreToBusinessCategory({ storeId, categoryId });
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["store-business-categories"],
-      });
-    },
-    onError: (err: any) => {
-      alert(
-        err?.response?.data?.message ?? err?.message ?? "Erro ao vincular.",
-      );
-    },
-  });
+    if (!categoryId || !storeId) {
+      alert("Selecione a categoria e a loja.");
+      return;
+    }
 
-  // ✅ Remover vínculo
-  const unlinkMutation = useMutation({
-    mutationFn: async (categoryId: string) => {
-      if (!storeId) throw new Error("Selecione uma loja.");
+    await linkStoreToBusinessCategory({
+      categoryId,
+      storeId,
+    });
 
-      const linkId = linkIdByCategoryId.get(categoryId);
-      if (!linkId) throw new Error("Vínculo não encontrado.");
-
-      await deleteStoreBusinessCategory(linkId);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["store-business-categories"],
-      });
-    },
-    onError: (err: any) => {
-      alert(err?.response?.data?.message ?? err?.message ?? "Erro ao remover.");
-    },
-  });
-
-  const isBusy =
-    isLoadingStores ||
-    isLoadingCategories ||
-    isLoadingLinks ||
-    linkMutation.isPending ||
-    unlinkMutation.isPending;
+    setStoreId("");
+    loadLinked(categoryId);
+  }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Vincular Loja → Tipo de Negócio</h1>
-        <p className="text-sm text-gray-600">
-          Selecione uma loja e vincule as categorias de negócio que ela atende.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold">
+        Vincular Categoria de Negócio à Loja
+      </h1>
 
-      {/* SELECT LOJA */}
-      <div className="space-y-2">
-        <label className="block text-sm font-semibold">Loja</label>
+      <form onSubmit={handleLink} className="space-y-4">
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="border p-2 w-full"
+        >
+          <option value="">Selecione a Categoria</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+
         <select
           value={storeId}
           onChange={(e) => setStoreId(e.target.value)}
-          className="w-full border p-2 rounded"
-          disabled={isLoadingStores}
+          className="border p-2 w-full"
         >
-          <option value="">
-            {isLoadingStores ? "Carregando lojas..." : "Selecione a loja"}
-          </option>
-          {stores?.map((store) => (
+          <option value="">Selecione a Loja</option>
+          {stores.map((store) => (
             <option key={store.id} value={store.id}>
               {store.name}
             </option>
           ))}
         </select>
-      </div>
 
-      {/* LISTA CATEGORIAS */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Tipos de negócio</h2>
+        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+          Vincular
+        </button>
+      </form>
 
-        {!storeId ? (
-          <div className="text-sm text-gray-500">
-            Selecione uma loja para ver e gerenciar os vínculos.
-          </div>
-        ) : isLoadingCategories || isLoadingLinks ? (
-          <div className="text-sm text-gray-500">Carregando dados...</div>
-        ) : (
-          <div className="space-y-2">
-            {categories?.map((cat) => {
-              const isLinked = linkIdByCategoryId.has(cat.id);
-              const isLinking =
-                linkMutation.isPending && linkMutation.variables === cat.id;
-              const isUnlinking =
-                unlinkMutation.isPending && unlinkMutation.variables === cat.id;
+      {categoryId && (
+        <div>
+          <h2 className="font-semibold mt-6">Lojas vinculadas</h2>
 
-              return (
-                <div
-                  key={cat.id}
-                  className="flex items-center justify-between border rounded p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    {cat.image ? (
-                      <img
-                        src={cat.image}
-                        alt={cat.name}
-                        className="w-10 h-10 object-cover rounded border"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded border bg-gray-50" />
-                    )}
-
-                    <div>
-                      <div className="font-medium">{cat.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {isLinked ? "Vinculado" : "Não vinculado"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isLinked ? (
-                    <button
-                      type="button"
-                      onClick={() => unlinkMutation.mutate(cat.id)}
-                      disabled={isBusy || isUnlinking}
-                      className="px-3 py-1.5 rounded text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
-                    >
-                      {isUnlinking ? "Removendo..." : "Remover"}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => linkMutation.mutate(cat.id)}
-                      disabled={isBusy || isLinking}
-                      className="px-3 py-1.5 rounded text-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
-                    >
-                      {isLinking ? "Vinculando..." : "Vincular"}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-
-            {categories?.length === 0 && (
-              <div className="text-sm text-gray-500">
-                Nenhuma categoria cadastrada.
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          <ul className="mt-2 space-y-2">
+            {linkedStores.map((item) => (
+              <li
+                key={item.id ?? item.storeId}
+                className="border p-2 rounded bg-gray-50"
+              >
+                {item.store?.name ?? item.name ?? item.storeId}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

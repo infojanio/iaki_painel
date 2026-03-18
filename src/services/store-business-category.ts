@@ -51,10 +51,16 @@ export async function listStoreBusinessCategoriesByCategoryId(
  * 🔗 SUPER_ADMIN: vincular store ↔ category
  * POST /store-business-categories/link-category
  */
-export async function linkStoreToBusinessCategory(
-  payload: LinkStoreToBusinessCategoryPayload,
-) {
-  await api.post("/store-business-categories/link-category", payload);
+
+export async function linkStoreToBusinessCategory(payload: {
+  categoryId: string;
+  storeId: string;
+}) {
+  const { data } = await api.post(
+    "/store-business-categories/link-category",
+    payload,
+  );
+  return data;
 }
 
 /**
@@ -68,6 +74,11 @@ export async function createStoreBusinessCategory(
     "/store-business-categories",
     payload,
   );
+  return data;
+}
+
+export async function getStoreBusinessCategoriesByCategory(categoryId: string) {
+  const { data } = await api.get(`/store-business-categories/${categoryId}`);
   return data;
 }
 
