@@ -70,6 +70,9 @@ export function Sidebar() {
               <li>
                 <NavLink to="/users">Clientes</NavLink>
               </li>
+              <li>
+                <NavLink to="/plans">Planos</NavLink>
+              </li>
             </ul>
           </div>
         </>
