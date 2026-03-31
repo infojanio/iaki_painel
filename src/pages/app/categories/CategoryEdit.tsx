@@ -54,7 +54,7 @@ export function CategoryEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       alert("✅ Atualizado com sucesso!");
-      navigate("/categorias/todos");
+      navigate("/categories");
     },
   });
 

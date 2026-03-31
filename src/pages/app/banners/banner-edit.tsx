@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { api } from "@/lib/axios";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Store = {
   id: string;
@@ -23,6 +24,7 @@ export function BannerEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const {
     register,
@@ -127,22 +129,24 @@ export function BannerEdit() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* LOJA */}
-        <div>
-          <label className="block text-sm font-semibold">Loja</label>
+        {user?.role === "SUPER_ADMIN" && (
+          <div>
+            <label className="block text-sm font-semibold">Loja</label>
 
-          <select
-            {...register("storeId", { required: true })}
-            className="w-full border p-2 rounded"
-          >
-            <option value="">Selecione a loja</option>
+            <select
+              {...register("storeId", { required: true })}
+              className="w-full border p-2 rounded"
+            >
+              <option value="">Selecione a loja</option>
 
-            {stores?.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name}
-              </option>
-            ))}
-          </select>
-        </div>
+              {stores?.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* NOME */}
         <div>

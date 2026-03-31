@@ -29,6 +29,11 @@ export async function getBanners() {
   return data;
 }
 
+export async function getBannersByStore() {
+  const { data } = await api.get("/banners/me");
+  return data;
+}
+
 export async function getBannerById(bannerId: string) {
   const { data } = await api.get<Banner>(`/banners/${bannerId}`);
   return data;

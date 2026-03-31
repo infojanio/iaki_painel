@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { api } from "@/lib/axios";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Store = {
   id: string;
@@ -14,12 +15,15 @@ type BannerFormData = {
   title: string;
   imageUrl?: string;
   link?: string;
-  storeId: string;
+  storeId?: string;
 };
 
 export function BannerNew() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === "ADMIN";
 
   const {
     register,
@@ -27,16 +31,14 @@ export function BannerNew() {
     watch,
     setValue,
     formState: { isSubmitting },
-  } = useForm<BannerFormData>({
-    defaultValues: {
-      storeId: "",
-    },
-  });
+  } = useForm<BannerFormData>();
 
   const imageUrl = watch("imageUrl");
 
+  // 🔥 só busca lojas se for SUPER_ADMIN
   const { data: stores, isLoading: isLoadingStores } = useQuery<Store[]>({
     queryKey: ["stores"],
+    enabled: user?.role === "SUPER_ADMIN",
     queryFn: async () => {
       const { data } = await api.get("/stores");
       return Array.isArray(data) ? data : (data?.stores ?? []);
@@ -45,19 +47,25 @@ export function BannerNew() {
 
   const { mutateAsync: createBanner } = useMutation({
     mutationFn: async (data: BannerFormData) => {
-      // validações mínimas aqui também
-      if (!data.storeId) throw new Error("Selecione uma loja.");
-      if (!data.imageUrl) throw new Error("Imagem obrigatória.");
+      const payload = {
+        title: data.title,
+        imageUrl: data.imageUrl,
+        link: data.link,
+        ...(data.storeId && { storeId: data.storeId }), // só SUPER_ADMIN
+      };
 
-      await api.post("/banners", data);
+      console.log("PAYLOAD FINAL:", payload);
+
+      await api.post("/banners", payload);
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["banners"] });
       alert("✅ Cadastrado com sucesso!");
       navigate("/banners");
     },
     onError: (err: any) => {
-      alert(err?.message ?? "Erro ao cadastrar banner.");
+      alert(err?.response?.data?.message ?? err.message);
     },
   });
 
@@ -78,24 +86,26 @@ export function BannerNew() {
       <h1 className="text-2xl font-bold mb-4">Novo Banner</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* LOJA */}
-        <div>
-          <label className="block text-sm font-semibold">Loja</label>
-          <select
-            {...register("storeId", { required: true })}
-            className="w-full border p-2 rounded"
-            disabled={isLoadingStores}
-          >
-            <option value="">
-              {isLoadingStores ? "Carregando lojas..." : "Selecione a loja"}
-            </option>
-            {stores?.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name}
+        {/* 🔥 MOSTRA SELECT SÓ PARA SUPER_ADMIN */}
+        {!isAdmin && (
+          <div>
+            <label className="block text-sm font-semibold">Loja</label>
+            <select
+              {...register("storeId", { required: true })}
+              className="w-full border p-2 rounded"
+              disabled={isLoadingStores}
+            >
+              <option value="">
+                {isLoadingStores ? "Carregando lojas..." : "Selecione a loja"}
               </option>
-            ))}
-          </select>
-        </div>
+              {stores?.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* TÍTULO */}
         <div>
@@ -103,7 +113,6 @@ export function BannerNew() {
           <input
             {...register("title", { required: true })}
             className="w-full border p-2 rounded"
-            required
           />
         </div>
 
@@ -112,12 +121,8 @@ export function BannerNew() {
           <label className="block text-sm font-semibold">
             Imagem (740x296)
           </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="block mt-1"
-          />
+          <input type="file" accept="image/*" onChange={handleImageUpload} />
+
           {imageUrl && (
             <img
               src={imageUrl}
@@ -130,17 +135,13 @@ export function BannerNew() {
         {/* LINK */}
         <div>
           <label className="block text-sm font-semibold">Link</label>
-          <input
-            {...register("link")}
-            className="w-full border p-2 rounded"
-            placeholder="https://..."
-          />
+          <input {...register("link")} className="w-full border p-2 rounded" />
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-60"
+          className="bg-green-600 text-white px-4 py-2 rounded"
         >
           {isSubmitting ? "Salvando..." : "Criar banner"}
         </button>

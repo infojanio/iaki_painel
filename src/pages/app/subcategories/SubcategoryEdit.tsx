@@ -9,7 +9,7 @@ import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 type SubcategoryFormData = {
   name: string;
   image?: string;
-  category_id: string;
+  categoryId: string;
 };
 
 type Category = {
@@ -71,7 +71,7 @@ export function SubcategoryEdit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
       alert("✅ Atualizado com sucesso!");
-      navigate("/subcategorias/todos");
+      navigate("/subcategories");
     },
   });
 
@@ -109,7 +109,7 @@ export function SubcategoryEdit() {
         <div>
           <label className="block text-sm font-semibold">Categoria</label>
           <select
-            {...register("category_id")}
+            {...register("categoryId")}
             className="w-full border p-2 rounded"
             required
           >

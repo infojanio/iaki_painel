@@ -72,6 +72,11 @@ import { StoreList } from "./pages/app/stores/store-list";
 import { StoreNew } from "./pages/app/stores/store-new";
 import { StoreEdit } from "./pages/app/stores/store-edit";
 import { PlansListPage } from "./pages/app/plans/PlansListPage";
+import { CreatePlanPage } from "./pages/app/plans/CreatePlanPage";
+import { EditPlanPage } from "./pages/app/plans/EditPlanPage";
+import { PlansPage } from "./pages/app/plans/PlansPage";
+import { MySubscriptionPage } from "./pages/app/subscriptions/MySubscriptionPage";
+import { SubscriptionsListPage } from "./pages/app/subscriptions/SubscriptionsListPage";
 
 export const router = createBrowserRouter([
   {
@@ -120,7 +125,7 @@ export const router = createBrowserRouter([
 
       /* ================= PRODUCTS (ADMIN) ================= */
       {
-        path: "produtos",
+        path: "products",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <ProductList />
@@ -128,7 +133,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "produtos/todos",
+        path: "products/all",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <ProductListAll />
@@ -136,7 +141,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "produtos/novo",
+        path: "products/new",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <ProductNew />
@@ -144,7 +149,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "produtos/editar/:id",
+        path: "products/edit/:id",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <ProductEdit />
@@ -154,7 +159,7 @@ export const router = createBrowserRouter([
 
       /* ================= CATEGORIES INTERNAS (ADMIN) ================= */
       {
-        path: "categorias/todos",
+        path: "categories",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <CategoryList />
@@ -162,7 +167,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "categorias/novo",
+        path: "categories/new",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <CategoryNew />
@@ -170,7 +175,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "categorias/editar/:id",
+        path: "categories/edit/:id",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <CategoryEdit />
@@ -180,7 +185,7 @@ export const router = createBrowserRouter([
 
       /* ================= SUBCATEGORIES INTERNAS (ADMIN) ================= */
       {
-        path: "subcategorias/todos",
+        path: "subcategories",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <SubcategoryList />
@@ -188,7 +193,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "subcategorias/novo",
+        path: "subcategories/new",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <SubcategoryNew />
@@ -196,7 +201,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "subcategorias/editar/:id",
+        path: "subcategories/edit/:id",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <SubcategoryEdit />
@@ -336,7 +341,7 @@ export const router = createBrowserRouter([
       {
         path: "banners",
         element: (
-          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard allowedRoles={["ADMIN"]}>
             <BannerList />
           </RoleGuard>
         ),
@@ -344,7 +349,7 @@ export const router = createBrowserRouter([
       {
         path: "banners/new",
         element: (
-          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard allowedRoles={["ADMIN"]}>
             <BannerNew />
           </RoleGuard>
         ),
@@ -352,17 +357,17 @@ export const router = createBrowserRouter([
       {
         path: "banners/edit/:id",
         element: (
-          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard allowedRoles={["ADMIN"]}>
             <BannerEdit />
           </RoleGuard>
         ),
       },
 
-      /* ================= REELS (SUPER_ADMIN) ================= */
+      /* ================= REELS (ADMIN) ================= */
       {
         path: "reels",
         element: (
-          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard allowedRoles={["ADMIN"]}>
             <ReelList />
           </RoleGuard>
         ),
@@ -370,7 +375,7 @@ export const router = createBrowserRouter([
       {
         path: "reels/new",
         element: (
-          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard allowedRoles={["ADMIN"]}>
             <ReelNew />
           </RoleGuard>
         ),
@@ -378,25 +383,178 @@ export const router = createBrowserRouter([
       {
         path: "reels/edit/:id",
         element: (
-          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+          <RoleGuard allowedRoles={["ADMIN"]}>
             <ReelEdit />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= SUBSCRIPTIONS (ADMIN) ================= */
+      {
+        path: "subscriptions",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <SubscriptionsListPage />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= PRODUCTS (ADMIN) ================= */
+      {
+        path: "/stores/:storeId/products",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <ProductList />
+          </RoleGuard>
+        ),
+      },
+
+      {
+        path: "products",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <ProductList />
+          </RoleGuard>
+        ),
+      },
+
+      {
+        path: "products/new",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <ProductNew />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "produtos/editar/:id",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <ProductEdit />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= CATEGORIES (ADMIN) ================= */
+      {
+        path: "categories",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <CategoryList />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "categories/new",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <CategoryNew />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "categories/edit/:id",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <CategoryEdit />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= SUBCATEGORIES (ADMIN) ================= */
+      {
+        path: "subcategories",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <SubcategoryList />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "subcategories/new",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <SubcategoryNew />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "subcategories/edit/:id",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <SubcategoryEdit />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= ORDERS (ADMIN) ================= */
+      {
+        path: "orders",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <Orders />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "orders/pending",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <PendingOrdersPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "pedidos/validar",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <OrderValidationPage />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= PLANS ================= */
+
+      // SUPER_ADMIN
+      {
+        path: "plans",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <PlansListPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "plans/create",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <CreatePlanPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: "plans/:id/edit",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <EditPlanPage />
+          </RoleGuard>
+        ),
+      },
+
+      // ADMIN (compra de planos)
+      {
+        path: "plans/subscribe",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <MySubscriptionPage />
           </RoleGuard>
         ),
       },
     ],
   },
+  /* ================= FIM APP LAYOUT================= */
 
-  /* ================= PLANS (SUPER_ADMIN) ================= */
-  {
-    path: "/plans",
-    element: (
-      <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
-        <PlansListPage />
-      </RoleGuard>
-    ),
-  },
-
-  /* ================= AUTH ================= */
+  /* ================= INÍCIO AUTH LAYOUT================= */
   {
     path: "/sign-in",
     element: <AuthLayout />,

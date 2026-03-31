@@ -8,7 +8,7 @@ import { api } from "@/lib/axios";
 type Banner = {
   id: string;
   title: string;
-  imageUrl: string; // 🔥 corrigido
+  imageUrl: string;
   link?: string | null;
   isActive: boolean;
   position?: number | null;
@@ -23,23 +23,26 @@ export function BannerList() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  // 🔥 LISTAR BANNERS (SEM storeId no frontend)
   const { data: banners, isLoading } = useQuery<Banner[]>({
     queryKey: ["banners"],
     enabled: !!user,
     queryFn: async () => {
-      const response = await api.get("/banners");
-      return Array.isArray(response.data)
-        ? response.data
-        : (response.data?.banners ?? []);
+      const response = await api.get("/banners/me");
+
+      return response.data?.data ?? [];
     },
   });
 
+  // 🔥 DELETE
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.delete(`/banners/${id}`);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["banners"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["banners"],
+      });
     },
   });
 
@@ -56,12 +59,13 @@ export function BannerList() {
     }
   };
 
-  if (isLoading)
+  if (isLoading) {
     return <p className="p-4 text-gray-600">Carregando banners...</p>;
+  }
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Banners</h1>
 
         <Link
@@ -72,90 +76,92 @@ export function BannerList() {
         </Link>
       </div>
 
-      <th></th>
+      {banners?.length === 0 ? (
+        <p className="text-gray-500">Nenhum banner cadastrado.</p>
+      ) : (
+        <div className="overflow-auto rounded-lg shadow">
+          <table className="min-w-full bg-white border border-gray-200">
+            <thead className="bg-gray-50 text-gray-700 text-sm">
+              <tr>
+                <th className="p-4 text-left">Imagem</th>
+                <th className="p-4 text-left">Nome</th>
+                <th className="p-4 text-left">Ativo</th>
+                <th className="p-4 text-left">Ações</th>
+              </tr>
+            </thead>
 
-      <div className="overflow-auto rounded-lg shadow">
-        <table className="min-w-full bg-white border border-gray-200">
-          <thead className="bg-gray-50 text-gray-700 text-sm">
-            <tr>
-              <th className="p-4 text-left">Imagem</th>
-              <th className="p-4 text-left">Nome</th>
-              <th className="p-4 text-left">Estabelecimento</th>
-              <th className="p-4 text-left">Ativo</th>
-              <th className="p-4 text-left">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-700 text-sm divide-y divide-gray-200">
-            {banners?.map((banner) => {
-              const isDeleting =
-                deleteMutation.isPending &&
-                deleteMutation.variables === banner.id;
+            <tbody className="text-gray-700 text-sm divide-y divide-gray-200">
+              {banners?.map((banner) => {
+                const isDeleting =
+                  deleteMutation.isPending &&
+                  deleteMutation.variables === banner.id;
 
-              return (
-                <tr key={banner.id}>
-                  <td className="p-4">
-                    {banner.imageUrl ? (
-                      <img
-                        src={banner.imageUrl}
-                        alt={banner.title}
-                        className="w-20 h-12 object-cover rounded border"
-                      />
-                    ) : (
-                      <span className="text-xs text-gray-400">Sem imagem</span>
-                    )}
-                  </td>
-
-                  <td className="p-4 font-medium">{banner.title}</td>
-
-                  <td className="p-4">{banner.store?.name ?? "-"}</td>
-
-                  <td className="p-4">
-                    {banner.isActive ? (
-                      <span className="text-green-600 font-semibold">
-                        Ativo
-                      </span>
-                    ) : (
-                      <span className="text-red-500 font-semibold">
-                        Inativo
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="p-4 flex items-center gap-3">
-                    <button
-                      onClick={() => navigate(`/banners/edit/${banner.id}`)}
-                      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      <Pencil className="w-4 h-4" /> Editar
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(banner.id, banner.title)}
-                      disabled={isDeleting}
-                      className={`flex items-center gap-1 text-sm ${
-                        isDeleting
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-red-600 hover:text-red-800"
-                      }`}
-                    >
-                      {isDeleting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />{" "}
-                          Excluindo…
-                        </>
+                return (
+                  <tr key={banner.id}>
+                    <td className="p-4">
+                      {banner.imageUrl ? (
+                        <img
+                          src={banner.imageUrl}
+                          alt={banner.title}
+                          className="w-20 h-12 object-cover rounded border"
+                        />
                       ) : (
-                        <>
-                          <Trash2 className="w-4 h-4" /> Excluir
-                        </>
+                        <span className="text-xs text-gray-400">
+                          Sem imagem
+                        </span>
                       )}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+
+                    <td className="p-4 font-medium">{banner.title}</td>
+
+                    <td className="p-4">
+                      {banner.isActive ? (
+                        <span className="text-green-600 font-semibold">
+                          Ativo
+                        </span>
+                      ) : (
+                        <span className="text-red-500 font-semibold">
+                          Inativo
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="p-4 flex items-center gap-3">
+                      <button
+                        onClick={() => navigate(`/banners/edit/${banner.id}`)}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        <Pencil className="w-4 h-4" /> Editar
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(banner.id, banner.title)}
+                        disabled={isDeleting}
+                        className={`flex items-center gap-1 text-sm ${
+                          isDeleting
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-red-600 hover:text-red-800"
+                        }`}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Excluindo…
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4" /> Excluir
+                          </>
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

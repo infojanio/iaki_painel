@@ -50,13 +50,13 @@ export function Sidebar() {
           </div>
 
           <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">📢 Mídia</h3>
+            <h3 className="font-semibold text-sm mb-2">👥 Cobrança</h3>
             <ul className="space-y-1 text-sm">
               <li>
-                <NavLink to="/banners">Banners</NavLink>
+                <NavLink to="/plans">Planos</NavLink>
               </li>
               <li>
-                <NavLink to="/reels">Reels</NavLink>
+                <NavLink to="/subscriptions">Assinaturas</NavLink>
               </li>
             </ul>
           </div>
@@ -70,9 +70,6 @@ export function Sidebar() {
               <li>
                 <NavLink to="/users">Clientes</NavLink>
               </li>
-              <li>
-                <NavLink to="/plans">Planos</NavLink>
-              </li>
             </ul>
           </div>
         </>
@@ -82,13 +79,43 @@ export function Sidebar() {
       {role === "ADMIN" && (
         <>
           <div className="mb-4">
+            <h3 className="font-semibold text-sm mb-2">💰 Assinatura</h3>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <NavLink
+                  to="/plans/subscribe"
+                  className={({ isActive }) =>
+                    `block rounded px-2 py-1 ${
+                      isActive ? "bg-gray-700 text-white" : "hover:bg-gray-800"
+                    }`
+                  }
+                >
+                  Meu Plano
+                </NavLink>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mb-4">
+            <h3 className="font-semibold text-sm mb-2">📢 Mídia</h3>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <NavLink to="/banners">Banners</NavLink>
+              </li>
+              <li>
+                <NavLink to="/reels">Reels</NavLink>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mb-4">
             <h3 className="font-semibold text-sm mb-2">🛒 Produtos</h3>
             <ul className="space-y-1 text-sm">
               <li>
                 <NavLink to="/products">Listar</NavLink>
               </li>
               <li>
-                <NavLink to="/products/create">Criar</NavLink>
+                <NavLink to="/products/new">Criar</NavLink>
               </li>
             </ul>
           </div>
