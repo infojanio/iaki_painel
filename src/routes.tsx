@@ -74,7 +74,7 @@ import { StoreEdit } from "./pages/app/stores/store-edit";
 import { PlansListPage } from "./pages/app/plans/PlansListPage";
 import { CreatePlanPage } from "./pages/app/plans/CreatePlanPage";
 import { EditPlanPage } from "./pages/app/plans/EditPlanPage";
-import { PlansPage } from "./pages/app/plans/PlansPage";
+
 import { MySubscriptionPage } from "./pages/app/subscriptions/MySubscriptionPage";
 import { SubscriptionsListPage } from "./pages/app/subscriptions/SubscriptionsListPage";
 

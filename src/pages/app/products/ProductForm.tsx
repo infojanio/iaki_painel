@@ -104,9 +104,7 @@ export function ProductForm({
 
   const imageUrl = watch("image");
 
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<
-    Category[]
-  >({
+  const { isLoading: isLoadingCategories } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
       const response = await api.get("/categories");
