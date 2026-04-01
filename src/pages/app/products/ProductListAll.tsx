@@ -109,7 +109,7 @@ export function ProductListAll() {
                 </td>
                 <td className="p-3">
                   <button
-                    onClick={() => navigate(`/produtos/editar/${product.id}`)}
+                    onClick={() => navigate(`/products/edit/${product.id}`)}
                     className="text-blue-600 hover:text-blue-800"
                     title="Editar"
                   >

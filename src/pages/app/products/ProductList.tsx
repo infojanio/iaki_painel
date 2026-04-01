@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "use-debounce";
 
 import { searchProducts, SearchProductsResponse } from "@/services/products";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,18 +20,26 @@ export function ProductList() {
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [minCashback, setMinCashback] = useState<number | null>(null);
 
+  // 🔥 debounce
+  const [debouncedQuery] = useDebounce(query, 1500);
+
   const { data, isLoading, error } = useQuery<SearchProductsResponse>({
-    queryKey: ["products", "me", page, query],
+    queryKey: ["products", "search", page, debouncedQuery],
     enabled: !!user?.id,
     queryFn: () =>
       searchProducts({
         page,
-        query,
+        query: debouncedQuery?.trim() || undefined, // 🔥 NÃO envia ""
         pageSize: 10,
       }),
   });
 
   const filteredProducts = data?.products.filter((product) => {
+    // 🔥 filtro leve (refino visual)
+    if (query && !product.name.toLowerCase().includes(query.toLowerCase())) {
+      return false;
+    }
+
     if (statusFilter === "active" && !product.status) return false;
     if (statusFilter === "inactive" && product.status) return false;
 
@@ -70,7 +79,10 @@ export function ProductList() {
           type="text"
           placeholder="Buscar produto..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1); // 🔥 reset página
+          }}
           className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
         />
 
@@ -105,7 +117,7 @@ export function ProductList() {
         </div>
       </div>
 
-      {/* LISTA EM CARDS */}
+      {/* LISTA */}
       {filteredProducts?.length === 0 ? (
         <div className="text-center py-10 text-gray-500">
           Nenhum produto encontrado
@@ -117,7 +129,6 @@ export function ProductList() {
               key={product.id}
               className="bg-white border rounded-xl shadow-sm overflow-hidden hover:shadow-md transition"
             >
-              {/* IMAGEM */}
               <div className="h-40 bg-gray-100 flex items-center justify-center">
                 {product.image ? (
                   <img
@@ -129,7 +140,6 @@ export function ProductList() {
                 )}
               </div>
 
-              {/* CONTEÚDO */}
               <div className="p-4 space-y-2">
                 <div className="flex justify-between items-start">
                   <h2 className="font-semibold text-lg">{product.name}</h2>
@@ -149,7 +159,6 @@ export function ProductList() {
                   {product.description}
                 </p>
 
-                {/* INFO */}
                 <div className="flex justify-between text-sm mt-2">
                   <span className="font-medium">
                     R$ {product.price.toFixed(2)}
@@ -166,12 +175,10 @@ export function ProductList() {
                   </span>
                 </div>
 
-                {/* CASHBACK */}
                 <div className="text-xs text-blue-600 font-medium">
                   Cashback: {product.cashbackPercentage}%
                 </div>
 
-                {/* AÇÕES */}
                 <div className="flex justify-between mt-4">
                   <button
                     onClick={() => navigate(`/products/edit/${product.id}`)}

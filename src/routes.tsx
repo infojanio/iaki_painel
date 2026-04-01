@@ -427,7 +427,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "produtos/editar/:id",
+        path: "products/edit/:id",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <ProductEdit />

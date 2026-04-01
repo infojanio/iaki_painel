@@ -31,7 +31,7 @@ export function ProductEdit() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", id] });
       alert("✅ Produto atualizado com sucesso!");
-      navigate("/produtos");
+      navigate("/products");
     },
     onError: (err: any) => {
       const message =
