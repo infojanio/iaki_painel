@@ -305,13 +305,13 @@ export function ProductForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Cashback (%)</label>
+          <label className="block text-sm font-medium mb-1">Desconto (%)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             {...register("cashbackPercentage", {
-              required: "Informe o cashback",
+              required: "Informe o desconto",
               valueAsNumber: true,
             })}
             className="w-full border p-2 rounded"

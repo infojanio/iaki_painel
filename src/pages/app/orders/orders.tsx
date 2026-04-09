@@ -84,9 +84,9 @@ export function Orders() {
           {result && (
             <Pagination
               onPageChange={handlePaginate}
-              pageIndex={result.meta.pageIndex}
-              totalCount={result.meta.totalCount}
-              perPage={result.meta.perPage}
+              pageIndex={result?.meta?.pageIndex ?? 0}
+              totalCount={result?.meta?.totalCount ?? 0}
+              perPage={result?.meta?.perPage ?? 10}
             />
           )}
         </div>

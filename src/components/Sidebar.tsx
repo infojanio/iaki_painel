@@ -124,9 +124,6 @@ export function Sidebar() {
             <h3 className="font-semibold text-sm mb-2">📦 Pedidos</h3>
             <ul className="space-y-1 text-sm">
               <li>
-                <NavLink to="/orders">Listar</NavLink>
-              </li>
-              <li>
                 <NavLink to="/orders/validate">Validar</NavLink>
               </li>
             </ul>

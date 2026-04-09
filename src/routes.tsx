@@ -115,7 +115,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "pedidos/validar",
+        path: "orders/validate",
         element: (
           <RoleGuard allowedRoles={["ADMIN"]}>
             <OrderValidationPage />
