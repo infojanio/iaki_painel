@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Dialog } from "@headlessui/react";
 
 import { listSubscriptions } from "@/services/subscriptions";
 import { api } from "@/lib/axios";
@@ -32,10 +33,17 @@ export function SubscriptionsListPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [planFilter, setPlanFilter] = useState("ALL");
 
+  const [selectedSub, setSelectedSub] = useState<SubscriptionItem | null>(null);
+  const [newEndDate, setNewEndDate] = useState("");
+
   const { data, isLoading } = useQuery<SubscriptionItem[]>({
     queryKey: ["subscriptions"],
     queryFn: listSubscriptions,
   });
+
+  /* =========================
+     MUTATIONS
+  ========================= */
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -45,6 +53,40 @@ export function SubscriptionsListPage() {
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
     },
   });
+
+  const renewMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.post(`/subscriptions/${id}/renew`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+    },
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.post(`/subscriptions/${id}/reactivate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+    },
+  });
+
+  const updateDateMutation = useMutation({
+    mutationFn: async ({ id, endDate }: { id: string; endDate: string }) => {
+      await api.patch(`/subscriptions/${id}/end-date`, {
+        endDate,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      setSelectedSub(null);
+    },
+  });
+
+  /* =========================
+     HELPERS
+  ========================= */
 
   function formatPrice(value: number) {
     return new Intl.NumberFormat("pt-BR", {
@@ -74,6 +116,10 @@ export function SubscriptionsListPage() {
     }
   }
 
+  /* =========================
+     FILTROS
+  ========================= */
+
   const filteredData = data?.filter((sub) => {
     const matchSearch = sub.store.name
       .toLowerCase()
@@ -86,6 +132,10 @@ export function SubscriptionsListPage() {
     return matchSearch && matchStatus && matchPlan;
   });
 
+  /* =========================
+     LOADING
+  ========================= */
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-10">
@@ -94,13 +144,17 @@ export function SubscriptionsListPage() {
     );
   }
 
+  /* =========================
+     UI
+  ========================= */
+
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* HEADER */}
       <div>
         <h1 className="text-2xl font-bold">Assinaturas</h1>
         <p className="text-sm text-muted-foreground">
-          Gestão completa das assinaturas do sistema
+          Gestão completa das assinaturas
         </p>
       </div>
 
@@ -132,7 +186,7 @@ export function SubscriptionsListPage() {
         >
           <option value="ALL">Todos planos</option>
           <option value="FREE">FREE</option>
-          <option value="BASICO">BASICO</option>
+          <option value="BASICO">BÁSICO</option>
           <option value="PRO">INTERMEDIÁRIO</option>
           <option value="PREMIUM">PREMIUM</option>
         </select>
@@ -147,8 +201,6 @@ export function SubscriptionsListPage() {
               <th className="px-4 py-3 text-left">Plano</th>
               <th className="px-4 py-3 text-left">Valor</th>
               <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Trial</th>
-              <th className="px-4 py-3 text-left">Início</th>
               <th className="px-4 py-3 text-left">Fim</th>
               <th className="px-4 py-3 text-left">Dias</th>
               <th className="px-4 py-3 text-left">Ações</th>
@@ -157,17 +209,9 @@ export function SubscriptionsListPage() {
 
           <tbody className="divide-y">
             {filteredData?.map((sub) => {
-              const isLoading =
-                cancelMutation.isPending && cancelMutation.variables === sub.id;
-
               return (
                 <tr key={sub.id}>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{sub.store.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {sub.store.city ?? "—"}
-                    </div>
-                  </td>
+                  <td className="px-4 py-3">{sub.store.name}</td>
 
                   <td className="px-4 py-3 font-semibold">{sub.plan.name}</td>
 
@@ -179,45 +223,85 @@ export function SubscriptionsListPage() {
                     </span>
                   </td>
 
-                  <td className="px-4 py-3">{sub.isTrial ? "Sim" : "Não"}</td>
-
-                  <td className="px-4 py-3">{formatDate(sub.startDate)}</td>
-
                   <td className="px-4 py-3">{formatDate(sub.endDate)}</td>
 
                   <td className="px-4 py-3">{sub.daysRemaining}</td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 flex flex-col gap-1 text-xs">
                     <button
-                      disabled={isLoading}
+                      onClick={() => renewMutation.mutate(sub.id)}
+                      className="text-green-600"
+                    >
+                      +30 dias
+                    </button>
+
+                    <button
                       onClick={() => {
-                        const confirm = window.confirm("Cancelar assinatura?");
-                        if (!confirm) return;
+                        setSelectedSub(sub);
+                        setNewEndDate(sub.endDate.slice(0, 10));
+                      }}
+                      className="text-blue-600"
+                    >
+                      Editar
+                    </button>
+
+                    {sub.status === "EXPIRED" && (
+                      <button
+                        onClick={() => reactivateMutation.mutate(sub.id)}
+                        className="text-green-700"
+                      >
+                        Reativar
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (!confirm("Cancelar assinatura?")) return;
                         cancelMutation.mutate(sub.id);
                       }}
-                      className={`text-sm ${
-                        isLoading
-                          ? "text-gray-400"
-                          : "text-red-600 hover:text-red-800"
-                      }`}
+                      className="text-red-600"
                     >
-                      {isLoading ? "Cancelando..." : "Cancelar"}
+                      Cancelar
                     </button>
                   </td>
                 </tr>
               );
             })}
-
-            {!filteredData?.length && (
-              <tr>
-                <td colSpan={8} className="text-center py-8 text-gray-500">
-                  Nenhuma assinatura encontrada
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
+
+      {/* MODAL */}
+      <Dialog open={!!selectedSub} onClose={() => setSelectedSub(null)}>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl w-[400px] space-y-4">
+            <h2 className="text-lg font-bold">Editar data final</h2>
+
+            <input
+              type="date"
+              value={newEndDate}
+              onChange={(e) => setNewEndDate(e.target.value)}
+              className="border w-full p-2 rounded"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setSelectedSub(null)}>Cancelar</button>
+
+              <button
+                onClick={() =>
+                  updateDateMutation.mutate({
+                    id: selectedSub!.id,
+                    endDate: newEndDate,
+                  })
+                }
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

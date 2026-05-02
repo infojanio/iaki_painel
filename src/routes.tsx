@@ -77,6 +77,8 @@ import { EditPlanPage } from "./pages/app/plans/EditPlanPage";
 
 import { MySubscriptionPage } from "./pages/app/subscriptions/MySubscriptionPage";
 import { SubscriptionsListPage } from "./pages/app/subscriptions/SubscriptionsListPage";
+import { StoreCategoriesPage } from "./pages/app/storeCategories/StoreCategoriesPage";
+import { StorePointsPage } from "./pages/app/store-points/StorePointsPage";
 
 export const router = createBrowserRouter([
   {
@@ -399,6 +401,15 @@ export const router = createBrowserRouter([
         ),
       },
 
+      {
+        path: "/stores/:storeId/points",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <StorePointsPage />
+          </RoleGuard>
+        ),
+      },
+
       /* ================= PRODUCTS (ADMIN) ================= */
       {
         path: "/stores/:storeId/products",
@@ -452,6 +463,16 @@ export const router = createBrowserRouter([
           </RoleGuard>
         ),
       },
+
+      {
+        path: "categories-by-store",
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <StoreCategoriesPage />
+          </RoleGuard>
+        ),
+      },
+
       {
         path: "categories/edit/:id",
         element: (

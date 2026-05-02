@@ -32,7 +32,7 @@ export function CategoryNew() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       alert("✅ Cadastrado com sucesso!");
-      navigate("/categorias/todos");
+      navigate("/categories");
     },
   });
 
@@ -82,7 +82,7 @@ export function CategoryNew() {
           disabled={isSubmitting}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
-          {isSubmitting ? "Salvando..." : "Criar subcategoria"}
+          {isSubmitting ? "Salvando..." : "Criar Categoria"}
         </button>
       </form>
     </div>

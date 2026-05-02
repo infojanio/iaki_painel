@@ -109,7 +109,7 @@ export function OrderValidationPage() {
     let result = [...orders];
     if (searchId.trim() !== "") {
       result = result.filter((order) =>
-        order.id.toLowerCase().includes(searchId.toLowerCase())
+        order.id.toLowerCase().includes(searchId.toLowerCase()),
       );
     }
     setFilteredOrders(result);
@@ -180,8 +180,8 @@ export function OrderValidationPage() {
                   order.status === "PENDING"
                     ? "bg-yellow-100 text-yellow-700"
                     : order.status === "VALIDATED"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
                 }`}
               >
                 {STATUS_OPTIONS.find((s) => s.value === order.status)?.label}
@@ -244,16 +244,14 @@ export function OrderValidationPage() {
                 <button
                   onClick={() => {
                     const ok = window.confirm(
-                      `Confirmar validação do pedido ${order.id.slice(0, 8)}?`
+                      `Confirmar validação do pedido ${order.id.slice(0, 8)}?`,
                     );
                     if (ok) validateOrder.mutate(order.id);
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-60"
                   disabled={anyMutating}
                 >
-                  {validateOrder.isPending
-                    ? "Validando..."
-                    : "Validar Cashback"}
+                  {validateOrder.isPending ? "Validando..." : "Validar Pontos"}
                 </button>
 
                 <button
@@ -261,8 +259,8 @@ export function OrderValidationPage() {
                     const ok = window.confirm(
                       `Confirmar cancelamento (EXPIRED) do pedido ${order.id.slice(
                         0,
-                        8
-                      )}?`
+                        8,
+                      )}?`,
                     );
                     if (ok) cancelOrder.mutate(order.id);
                   }}

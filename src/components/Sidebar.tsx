@@ -154,6 +154,17 @@ export function Sidebar() {
           </div>
 
           <div className="mb-4">
+            <h3 className="font-semibold text-sm mb-2">
+              📂 Categorias da Loja
+            </h3>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <NavLink to="/categories-by-store">Vincular</NavLink>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mb-4">
             <NavLink to="/stock">📊 Estoque</NavLink>
           </div>
         </>
