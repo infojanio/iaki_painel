@@ -103,7 +103,7 @@ export function StoreCategoriesPage() {
                   isActive ? "bg-green-600 text-white" : "bg-gray-200"
                 }`}
               >
-                {isActive ? "Ativo" : "Adicionar"}
+                {isActive ? "Desativar" : "Ativar"}
               </button>
             </div>
           );

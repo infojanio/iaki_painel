@@ -20,7 +20,10 @@ export function AppLayout() {
 
           <div className="flex items-center gap-4">
             <span className="text-sm">
-              Olá, <strong>{user?.name}</strong>
+              Olá,{" "}
+              <strong>
+                {user?.name} - {user?.role}
+              </strong>
             </span>
             <Button variant="default" size="sm" onClick={signOut}>
               Sair

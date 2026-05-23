@@ -107,7 +107,7 @@ export function ProductForm({
   const { isLoading: isLoadingCategories } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: async () => {
-      const response = await api.get("/categories");
+      const response = await api.get("/categories/me");
       const data = response.data?.data ?? response.data;
       return Array.isArray(data) ? data : (data?.categories ?? []);
     },
@@ -117,7 +117,7 @@ export function ProductForm({
     useQuery<Subcategory[]>({
       queryKey: ["subcategories"],
       queryFn: async () => {
-        const response = await api.get("/subcategories");
+        const response = await api.get("/subcategories/me");
         const data = response.data?.data ?? response.data;
         return Array.isArray(data) ? data : (data?.subcategories ?? []);
       },

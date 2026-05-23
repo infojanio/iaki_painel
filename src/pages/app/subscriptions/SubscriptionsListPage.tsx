@@ -1,6 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  RefreshCcw,
+  Search,
+  ShieldAlert,
+  Store,
+  XCircle,
+} from "lucide-react";
 import { Dialog } from "@headlessui/react";
 
 import { listSubscriptions } from "@/services/subscriptions";
@@ -13,17 +22,37 @@ type SubscriptionItem = {
   startDate: string;
   endDate: string;
   daysRemaining: number;
+
+  usage?: {
+    products: number;
+    banners: number;
+    reels: number;
+    categories: number;
+  };
+
   plan: {
     id: string;
     name: string;
     price: number;
+    maxProducts: number | null;
+    maxBanners: number | null;
+    maxReels: number | null;
+    maxCategories: number | null;
   };
+
   store: {
     id: string;
     name: string;
     cnpj: string | null;
     city: string | null;
   };
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Ativo",
+  TRIALING: "Período grátis",
+  EXPIRED: "Expirado",
+  CANCELED: "Cancelado",
 };
 
 export function SubscriptionsListPage() {
@@ -34,23 +63,58 @@ export function SubscriptionsListPage() {
   const [planFilter, setPlanFilter] = useState("ALL");
 
   const [selectedSub, setSelectedSub] = useState<SubscriptionItem | null>(null);
+
   const [newEndDate, setNewEndDate] = useState("");
+
+  /* ======================================================
+     QUERY
+  ====================================================== */
 
   const { data, isLoading } = useQuery<SubscriptionItem[]>({
     queryKey: ["subscriptions"],
     queryFn: listSubscriptions,
   });
 
-  /* =========================
+  /* ======================================================
+     MANTÉM APENAS A ASSINATURA MAIS RECENTE POR LOJA
+  ====================================================== */
+
+  const uniqueSubscriptions = useMemo(() => {
+    if (!data) return [];
+
+    const map = new Map<string, SubscriptionItem>();
+
+    data.forEach((sub) => {
+      const current = map.get(sub.store.id);
+
+      if (!current) {
+        map.set(sub.store.id, sub);
+        return;
+      }
+
+      const currentDate = new Date(current.startDate).getTime();
+      const nextDate = new Date(sub.startDate).getTime();
+
+      if (nextDate > currentDate) {
+        map.set(sub.store.id, sub);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [data]);
+
+  /* ======================================================
      MUTATIONS
-  ========================= */
+  ====================================================== */
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
       await api.post(`/subscriptions/${id}/cancel`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions"],
+      });
     },
   });
 
@@ -59,7 +123,9 @@ export function SubscriptionsListPage() {
       await api.post(`/subscriptions/${id}/renew`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions"],
+      });
     },
   });
 
@@ -68,7 +134,9 @@ export function SubscriptionsListPage() {
       await api.post(`/subscriptions/${id}/reactivate`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions"],
+      });
     },
   });
 
@@ -78,15 +146,19 @@ export function SubscriptionsListPage() {
         endDate,
       });
     },
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions"],
+      });
+
       setSelectedSub(null);
     },
   });
 
-  /* =========================
+  /* ======================================================
      HELPERS
-  ========================= */
+  ====================================================== */
 
   function formatPrice(value: number) {
     return new Intl.NumberFormat("pt-BR", {
@@ -100,30 +172,76 @@ export function SubscriptionsListPage() {
   }
 
   function getStatusBadge(status: string) {
-    const base = "px-2 py-1 rounded-full text-xs font-semibold";
+    const base = "px-3 py-1 rounded-full text-xs font-semibold border";
 
     switch (status) {
       case "ACTIVE":
-        return `${base} bg-green-100 text-green-700`;
+        return `${base} bg-green-100 text-green-700 border-green-200`;
+
       case "TRIALING":
-        return `${base} bg-yellow-100 text-yellow-700`;
+        return `${base} bg-yellow-100 text-yellow-700 border-yellow-200`;
+
       case "EXPIRED":
-        return `${base} bg-red-100 text-red-700`;
+        return `${base} bg-red-100 text-red-700 border-red-200`;
+
       case "CANCELED":
-        return `${base} bg-gray-200 text-gray-600`;
+        return `${base} bg-gray-100 text-gray-700 border-gray-200`;
+
       default:
         return base;
     }
   }
 
-  /* =========================
-     FILTROS
-  ========================= */
+  function getUsageColor(percentage: number) {
+    if (percentage >= 100) return "bg-red-500";
+    if (percentage >= 80) return "bg-yellow-500";
+    return "bg-blue-500";
+  }
 
-  const filteredData = data?.filter((sub) => {
-    const matchSearch = sub.store.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  function renderUsage(used: number, limit: number | null) {
+    if (limit === null) {
+      return (
+        <div className="text-xs font-medium text-green-600">Ilimitado</div>
+      );
+    }
+
+    const percentage = (used / limit) * 100;
+
+    return (
+      <div className="min-w-[120px]">
+        <div className="flex items-center justify-between text-xs mb-1">
+          <span>
+            {used} / {limit}
+          </span>
+
+          {percentage >= 80 && (
+            <AlertTriangle className="h-3 w-3 text-yellow-600" />
+          )}
+        </div>
+
+        <div className="h-2 rounded bg-gray-200 overflow-hidden">
+          <div
+            className={`h-2 ${getUsageColor(percentage)}`}
+            style={{
+              width: `${Math.min(percentage, 100)}%`,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  /* ======================================================
+     FILTROS
+  ====================================================== */
+
+  const filteredData = uniqueSubscriptions.filter((sub) => {
+    const term = search.toLowerCase();
+
+    const matchSearch =
+      sub.store.name.toLowerCase().includes(term) ||
+      sub.store.city?.toLowerCase().includes(term) ||
+      sub.store.cnpj?.includes(term);
 
     const matchStatus = statusFilter === "ALL" || sub.status === statusFilter;
 
@@ -132,137 +250,245 @@ export function SubscriptionsListPage() {
     return matchSearch && matchStatus && matchPlan;
   });
 
-  /* =========================
+  /* ======================================================
+     KPIS
+  ====================================================== */
+
+  const stats = {
+    total: filteredData.length,
+    active: filteredData.filter((s) => s.status === "ACTIVE").length,
+
+    trial: filteredData.filter((s) => s.status === "TRIALING").length,
+
+    expired: filteredData.filter((s) => s.status === "EXPIRED").length,
+  };
+
+  /* ======================================================
      LOADING
-  ========================= */
+  ====================================================== */
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-10">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  /* =========================
+  /* ======================================================
      UI
-  ========================= */
+  ====================================================== */
 
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* HEADER */}
-      <div>
-        <h1 className="text-2xl font-bold">Assinaturas</h1>
-        <p className="text-sm text-muted-foreground">
-          Gestão completa das assinaturas
-        </p>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Gestão de Assinaturas</h1>
+
+          <p className="text-sm text-muted-foreground">
+            Situação atual das lojas e planos ativos
+          </p>
+        </div>
+      </div>
+
+      {/* KPIs */}
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardKpi
+          title="Lojas"
+          value={stats.total}
+          icon={<Store className="h-5 w-5" />}
+        />
+
+        <CardKpi
+          title="Ativas"
+          value={stats.active}
+          icon={<CheckCircle2 className="h-5 w-5 text-green-600" />}
+        />
+
+        <CardKpi
+          title="Trial"
+          value={stats.trial}
+          icon={<RefreshCcw className="h-5 w-5 text-yellow-600" />}
+        />
+
+        <CardKpi
+          title="Expiradas"
+          value={stats.expired}
+          icon={<ShieldAlert className="h-5 w-5 text-red-600" />}
+        />
       </div>
 
       {/* FILTROS */}
+
       <div className="flex flex-wrap gap-4">
-        <input
-          placeholder="Buscar loja..."
-          className="border rounded px-3 py-2 text-sm w-64"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+
+          <input
+            placeholder="Buscar loja, cidade ou CNPJ..."
+            className="border rounded-lg pl-10 pr-4 py-2 text-sm w-72"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
         <select
-          className="border rounded px-3 py-2 text-sm"
+          className="border rounded-lg px-3 py-2 text-sm"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="ALL">Todos status</option>
+
           <option value="ACTIVE">Ativo</option>
-          <option value="TRIALING">Trial</option>
+
+          <option value="TRIALING">Período grátis</option>
+
           <option value="EXPIRED">Expirado</option>
+
           <option value="CANCELED">Cancelado</option>
         </select>
 
         <select
-          className="border rounded px-3 py-2 text-sm"
+          className="border rounded-lg px-3 py-2 text-sm"
           value={planFilter}
           onChange={(e) => setPlanFilter(e.target.value)}
         >
           <option value="ALL">Todos planos</option>
+
           <option value="FREE">FREE</option>
+
           <option value="BASICO">BÁSICO</option>
+
           <option value="PRO">INTERMEDIÁRIO</option>
+
           <option value="PREMIUM">PREMIUM</option>
         </select>
       </div>
 
       {/* TABELA */}
-      <div className="overflow-auto rounded-xl border bg-white shadow">
+
+      <div className="overflow-auto rounded-2xl border bg-white shadow-sm">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
+          <thead className="bg-gray-50 text-gray-600 border-b">
             <tr>
-              <th className="px-4 py-3 text-left">Loja</th>
-              <th className="px-4 py-3 text-left">Plano</th>
-              <th className="px-4 py-3 text-left">Valor</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Fim</th>
-              <th className="px-4 py-3 text-left">Dias</th>
-              <th className="px-4 py-3 text-left">Ações</th>
+              <th className="px-4 py-4 text-left">Loja</th>
+
+              <th className="px-4 py-4 text-left">Plano Atual</th>
+
+              <th className="px-4 py-4 text-left">Status</th>
+
+              <th className="px-4 py-4 text-left">Vencimento</th>
+
+              <th className="px-4 py-4 text-left">Ações</th>
             </tr>
           </thead>
 
           <tbody className="divide-y">
-            {filteredData?.map((sub) => {
+            {filteredData.map((sub) => {
               return (
-                <tr key={sub.id}>
-                  <td className="px-4 py-3">{sub.store.name}</td>
+                <tr key={sub.id} className="hover:bg-gray-50 transition-colors">
+                  {/* LOJA */}
 
-                  <td className="px-4 py-3 font-semibold">{sub.plan.name}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col">
+                      <strong>{sub.store.name}</strong>
 
-                  <td className="px-4 py-3">{formatPrice(sub.plan.price)}</td>
+                      <span className="text-xs text-gray-500">
+                        {sub.store.city || "Sem cidade"}
+                      </span>
 
-                  <td className="px-4 py-3">
+                      {sub.store.cnpj && (
+                        <span className="text-xs text-gray-400">
+                          {sub.store.cnpj}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* PLANO */}
+
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{sub.plan.name}</span>
+
+                      <span className="text-xs text-gray-500">
+                        {formatPrice(sub.plan.price)}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* STATUS */}
+
+                  <td className="px-4 py-4">
                     <span className={getStatusBadge(sub.status)}>
-                      {sub.status}
+                      {STATUS_LABELS[sub.status]}
                     </span>
                   </td>
 
-                  <td className="px-4 py-3">{formatDate(sub.endDate)}</td>
+                  {/* VENCIMENTO */}
 
-                  <td className="px-4 py-3">{sub.daysRemaining}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col">
+                      <span>{formatDate(sub.endDate)}</span>
 
-                  <td className="px-4 py-3 flex flex-col gap-1 text-xs">
-                    <button
-                      onClick={() => renewMutation.mutate(sub.id)}
-                      className="text-green-600"
-                    >
-                      +30 dias
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setSelectedSub(sub);
-                        setNewEndDate(sub.endDate.slice(0, 10));
-                      }}
-                      className="text-blue-600"
-                    >
-                      Editar
-                    </button>
-
-                    {sub.status === "EXPIRED" && (
-                      <button
-                        onClick={() => reactivateMutation.mutate(sub.id)}
-                        className="text-green-700"
+                      <span
+                        className={`text-xs ${
+                          sub.daysRemaining <= 5
+                            ? "text-red-600"
+                            : "text-gray-500"
+                        }`}
                       >
-                        Reativar
-                      </button>
-                    )}
+                        {sub.daysRemaining} dias
+                      </span>
+                    </div>
+                  </td>
 
-                    <button
-                      onClick={() => {
-                        if (!confirm("Cancelar assinatura?")) return;
-                        cancelMutation.mutate(sub.id);
-                      }}
-                      className="text-red-600"
-                    >
-                      Cancelar
-                    </button>
+                  {/* AÇÕES */}
+
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-2 text-xs">
+                      <button
+                        onClick={() => renewMutation.mutate(sub.id)}
+                        className="text-green-600 hover:underline text-left"
+                      >
+                        Renovar +30 dias
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setSelectedSub(sub);
+
+                          setNewEndDate(sub.endDate.slice(0, 10));
+                        }}
+                        className="text-blue-600 hover:underline text-left"
+                      >
+                        Alterar vencimento
+                      </button>
+
+                      {sub.status === "EXPIRED" && (
+                        <button
+                          onClick={() => reactivateMutation.mutate(sub.id)}
+                          className="text-green-700 hover:underline text-left"
+                        >
+                          Reativar loja
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          if (!confirm("Suspender assinatura desta loja?"))
+                            return;
+
+                          cancelMutation.mutate(sub.id);
+                        }}
+                        className="text-red-600 hover:underline text-left"
+                      >
+                        Suspender assinatura
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -272,20 +498,26 @@ export function SubscriptionsListPage() {
       </div>
 
       {/* MODAL */}
+
       <Dialog open={!!selectedSub} onClose={() => setSelectedSub(null)}>
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-[400px] space-y-4">
-            <h2 className="text-lg font-bold">Editar data final</h2>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl w-[420px] space-y-4 shadow-xl">
+            <h2 className="text-lg font-bold">Alterar vencimento</h2>
 
             <input
               type="date"
               value={newEndDate}
               onChange={(e) => setNewEndDate(e.target.value)}
-              className="border w-full p-2 rounded"
+              className="border w-full p-2 rounded-lg"
             />
 
             <div className="flex justify-end gap-2">
-              <button onClick={() => setSelectedSub(null)}>Cancelar</button>
+              <button
+                onClick={() => setSelectedSub(null)}
+                className="px-4 py-2 rounded border"
+              >
+                Cancelar
+              </button>
 
               <button
                 onClick={() =>
@@ -294,7 +526,7 @@ export function SubscriptionsListPage() {
                     endDate: newEndDate,
                   })
                 }
-                className="bg-blue-600 text-white px-4 py-2 rounded"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
               >
                 Salvar
               </button>
@@ -302,6 +534,30 @@ export function SubscriptionsListPage() {
           </div>
         </div>
       </Dialog>
+    </div>
+  );
+}
+
+function CardKpi({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-500">{title}</p>
+
+          <h3 className="text-2xl font-bold">{value}</h3>
+        </div>
+
+        {icon}
+      </div>
     </div>
   );
 }

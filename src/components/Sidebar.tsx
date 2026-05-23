@@ -50,6 +50,27 @@ export function Sidebar() {
           </div>
 
           <div className="mb-4">
+            <h3 className="font-semibold text-sm mb-2">📂 Categorias</h3>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <NavLink to="/categories">Categorias</NavLink>
+              </li>
+              <li>
+                <NavLink to="/subcategories">Subcategorias</NavLink>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mb-4">
+            <h3 className="font-semibold text-sm mb-2">👥 Publicidade</h3>
+            <ul className="space-y-1 text-sm">
+              <li>
+                <NavLink to="/reels">Reels</NavLink>
+              </li>
+            </ul>
+          </div>
+
+          <div className="mb-4">
             <h3 className="font-semibold text-sm mb-2">👥 Cobrança</h3>
             <ul className="space-y-1 text-sm">
               <li>
@@ -64,9 +85,6 @@ export function Sidebar() {
           <div className="mb-4">
             <h3 className="font-semibold text-sm mb-2">👥 Usuários</h3>
             <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/users/admins">Administradores</NavLink>
-              </li>
               <li>
                 <NavLink to="/users">Clientes</NavLink>
               </li>
@@ -102,9 +120,6 @@ export function Sidebar() {
               <li>
                 <NavLink to="/banners">Banners</NavLink>
               </li>
-              <li>
-                <NavLink to="/reels">Reels</NavLink>
-              </li>
             </ul>
           </div>
 
@@ -130,25 +145,13 @@ export function Sidebar() {
           </div>
 
           <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">💰 Pontos & Cashback</h3>
+            <h3 className="font-semibold text-sm mb-2">🥇 Pontos & Brindes</h3>
             <ul className="space-y-1 text-sm">
               <li>
                 <NavLink to="/rewards">Recompensas</NavLink>
               </li>
               <li>
                 <NavLink to="/redemptions">Resgates</NavLink>
-              </li>
-            </ul>
-          </div>
-
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">📂 Categorias</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/categories">Categorias</NavLink>
-              </li>
-              <li>
-                <NavLink to="/subcategories">Subcategorias</NavLink>
               </li>
             </ul>
           </div>

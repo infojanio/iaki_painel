@@ -22,9 +22,9 @@ export function ReelList() {
     queryKey: ["reels"],
     enabled: !!user,
     queryFn: async () => {
-      const response = await api.get("/reels/me");
+      const response = await api.get("/reels");
 
-      return response.data?.data ?? [];
+      return response.data?.data ?? response.data?.reels ?? response.data ?? [];
     },
   });
 
