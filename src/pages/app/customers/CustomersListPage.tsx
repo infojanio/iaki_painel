@@ -1,16 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import {
-  Loader2,
-  Search,
-  Users,
-  Mail,
-  Phone,
-  Link2,
-  Store,
-} from "lucide-react";
+import { Loader2, Search, Users, Phone, Link2, Store } from "lucide-react";
 
 import { Dialog } from "@headlessui/react";
 

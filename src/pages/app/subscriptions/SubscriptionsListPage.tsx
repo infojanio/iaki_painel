@@ -8,7 +8,6 @@ import {
   Search,
   ShieldAlert,
   Store,
-  XCircle,
 } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 
@@ -198,6 +197,7 @@ export function SubscriptionsListPage() {
     return "bg-blue-500";
   }
 
+  /*  
   function renderUsage(used: number, limit: number | null) {
     if (limit === null) {
       return (
@@ -230,6 +230,7 @@ export function SubscriptionsListPage() {
       </div>
     );
   }
+  */
 
   /* ======================================================
      FILTROS
