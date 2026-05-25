@@ -26,8 +26,6 @@ export function Dashboard() {
           <DayOrdersAmountCard />
 
           <ActiveProductsCard />
-          <CashbackGeneratedCard />
-          <CashbackUsedCard />
         </div>
 
         {/* Gráficos e tabelas */}

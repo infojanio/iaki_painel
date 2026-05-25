@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   CheckCircle2,
   Loader2,
   RefreshCcw,
@@ -191,13 +190,13 @@ export function SubscriptionsListPage() {
     }
   }
 
+  /*  
   function getUsageColor(percentage: number) {
     if (percentage >= 100) return "bg-red-500";
     if (percentage >= 80) return "bg-yellow-500";
     return "bg-blue-500";
   }
 
-  /*  
   function renderUsage(used: number, limit: number | null) {
     if (limit === null) {
       return (
