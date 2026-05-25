@@ -1,6 +1,74 @@
+import {
+  LayoutDashboard,
+  MapPinned,
+  Building2,
+  Store,
+  Package,
+  Layers3,
+  Megaphone,
+  Clapperboard,
+  CreditCard,
+  Users,
+  Gift,
+  BadgePercent,
+  History,
+  Settings,
+  LogOut,
+  ChevronRight,
+} from "lucide-react";
+
 import { NavLink } from "react-router-dom";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "./ui/button";
+
+function SidebarLink({
+  to,
+  icon: Icon,
+  label,
+}: {
+  to: string;
+  icon: any;
+  label: string;
+}) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+          isActive
+            ? "bg-green-600 text-white shadow-lg"
+            : "text-gray-300 hover:bg-gray-800 hover:text-white"
+        }`
+      }
+    >
+      <div className="flex items-center gap-3">
+        <Icon className="h-4 w-4" />
+        <span>{label}</span>
+      </div>
+
+      <ChevronRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+    </NavLink>
+  );
+}
+
+function SidebarSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <h3 className="px-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+        {title}
+      </h3>
+
+      <div className="space-y-1">{children}</div>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const { user, signOut } = useAuth();
@@ -8,175 +76,191 @@ export function Sidebar() {
   const role = user?.role;
 
   return (
-    <aside className="w-64 h-screen bg-gray-900 text-white p-4">
-      <h2 className="text-xl font-bold mb-6">IAki Painel</h2>
+    <aside className="w-72 h-screen bg-[#0F172A] border-r border-slate-800 flex flex-col sticky top-0">
+      {/* HEADER */}
 
-      {/* DASHBOARD */}
-      <div className="mb-6">
-        <NavLink to="/" className="hover:underline">
-          🏠 Dashboard
-        </NavLink>
+      <div className="px-5 py-5 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-green-600 flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-lg">I</span>
+          </div>
+
+          <div>
+            <h1 className="text-lg font-bold text-white">IAki Painel</h1>
+
+            <p className="text-xs text-gray-400">Marketplace & Fidelização</p>
+          </div>
+        </div>
       </div>
 
-      {/* ================= SUPER ADMIN ================= */}
-      {role === "SUPER_ADMIN" && (
-        <>
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">🌎 Estrutura</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/states">Estados</NavLink>
-              </li>
-              <li>
-                <NavLink to="/cities">Cidades</NavLink>
-              </li>
-              <li>
-                <NavLink to="/business-categories">Ramo de Negócio</NavLink>
-              </li>
-              <li>
-                <NavLink to="/business-categories-cities">
-                  Vincular ↔ Cidade/Negócio
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/stores">Lojas</NavLink>
-              </li>
-              <li>
-                <NavLink to="/store-business-categories">
-                  Vincular ↔ Loja/Negócio
-                </NavLink>
-              </li>
-            </ul>
+      {/* USER */}
+
+      <div className="px-5 py-4 border-b border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
+            {user?.name?.charAt(0)}
           </div>
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">📂 Categorias</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/categories">Categorias</NavLink>
-              </li>
-              <li>
-                <NavLink to="/subcategories">Subcategorias</NavLink>
-              </li>
-            </ul>
-          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white truncate">
+              {user?.name}
+            </p>
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">👥 Publicidade</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/reels">Reels</NavLink>
-              </li>
-            </ul>
+            <p className="text-xs text-gray-400 truncate">
+              {role === "SUPER_ADMIN" ? "Super Administrador" : "Administrador"}
+            </p>
           </div>
+        </div>
+      </div>
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">👥 Cobrança</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/plans">Planos</NavLink>
-              </li>
-              <li>
-                <NavLink to="/subscriptions">Assinaturas</NavLink>
-              </li>
-            </ul>
-          </div>
+      {/* MENU */}
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">👥 Usuários</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/users">Clientes</NavLink>
-              </li>
-            </ul>
-          </div>
-        </>
-      )}
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        {/* DASHBOARD */}
 
-      {/* ================= ADMIN LOJA ================= */}
-      {role === "ADMIN" && (
-        <>
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">💰 Assinatura</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink
-                  to="/plans/subscribe"
-                  className={({ isActive }) =>
-                    `block rounded px-2 py-1 ${
-                      isActive ? "bg-gray-700 text-white" : "hover:bg-gray-800"
-                    }`
-                  }
-                >
-                  Meu Plano
-                </NavLink>
-              </li>
-            </ul>
-          </div>
+        <SidebarSection title="Painel">
+          <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" />
+        </SidebarSection>
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">📢 Mídia</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/banners">Banners</NavLink>
-              </li>
-            </ul>
-          </div>
+        {/* SUPER ADMIN */}
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">🛒 Produtos</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/products">Listar</NavLink>
-              </li>
-              <li>
-                <NavLink to="/products/new">Criar</NavLink>
-              </li>
-            </ul>
-          </div>
+        {role === "SUPER_ADMIN" && (
+          <>
+            <SidebarSection title="Estrutura">
+              <SidebarLink to="/states" icon={MapPinned} label="Estados" />
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">📦 Pedidos</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/orders/validate">Validar</NavLink>
-              </li>
-            </ul>
-          </div>
+              <SidebarLink to="/cities" icon={Building2} label="Cidades" />
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">🥇 Pontos & Brindes</h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/rewards">Recompensas</NavLink>
-              </li>
-              <li>
-                <NavLink to="/redemptions">Resgates</NavLink>
-              </li>
-            </ul>
-          </div>
+              <SidebarLink
+                to="/business-categories"
+                icon={Store}
+                label="Ramos de Negócio"
+              />
 
-          <div className="mb-4">
-            <h3 className="font-semibold text-sm mb-2">
-              📂 Categorias da Loja
-            </h3>
-            <ul className="space-y-1 text-sm">
-              <li>
-                <NavLink to="/categories-by-store">Vincular</NavLink>
-              </li>
-            </ul>
-          </div>
+              <SidebarLink to="/stores" icon={Store} label="Lojas" />
 
-          <div className="mb-4">
-            <NavLink to="/stock">📊 Estoque</NavLink>
-          </div>
-        </>
-      )}
+              <SidebarSection title="Vinculação">
+                <SidebarLink
+                  to="/business-categories-cities"
+                  icon={Store}
+                  label="Cidade/Negócio"
+                />
 
-      {/* SAIR */}
-      <div className="mt-8">
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          ⛔ Sair
+                <SidebarLink
+                  to="/store-business-categories"
+                  icon={Store}
+                  label="Negócio/Loja"
+                />
+              </SidebarSection>
+            </SidebarSection>
+
+            <SidebarSection title="Categorias">
+              <SidebarLink to="/categories" icon={Layers3} label="Categorias" />
+
+              <SidebarLink
+                to="/subcategories"
+                icon={Layers3}
+                label="Subcategorias"
+              />
+            </SidebarSection>
+
+            <SidebarSection title="Publicidade">
+              <SidebarLink to="/reels" icon={Clapperboard} label="Reels" />
+            </SidebarSection>
+
+            <SidebarSection title="Cobrança">
+              <SidebarLink to="/plans" icon={CreditCard} label="Planos" />
+
+              <SidebarLink
+                to="/subscriptions"
+                icon={BadgePercent}
+                label="Assinaturas"
+              />
+            </SidebarSection>
+
+            <SidebarSection title="Usuários">
+              <SidebarLink to="/users" icon={Users} label="Clientes" />
+            </SidebarSection>
+          </>
+        )}
+
+        {/* ADMIN */}
+
+        {role === "ADMIN" && (
+          <>
+            <SidebarSection title="Assinatura">
+              <SidebarLink
+                to="/plans/subscribe"
+                icon={CreditCard}
+                label="Meu Plano"
+              />
+            </SidebarSection>
+
+            <SidebarSection title="Produtos">
+              <SidebarLink to="/products" icon={Package} label="Produtos" />
+            </SidebarSection>
+
+            <SidebarSection title="Publicidade">
+              <SidebarLink to="/banners" icon={Megaphone} label="Banners" />
+            </SidebarSection>
+
+            <SidebarSection title="Vinculação">
+              <SidebarLink
+                to="/categories-by-store"
+                icon={Megaphone}
+                label="Categoria"
+              />
+            </SidebarSection>
+
+            <SidebarSection title="Aprovar">
+              <SidebarLink
+                to="/orders/validate"
+                icon={Megaphone}
+                label="Pedidos"
+              />
+            </SidebarSection>
+
+            <SidebarSection title="Fidelização">
+              <SidebarLink
+                to="/store-rewards"
+                icon={Gift}
+                label="Recompensas"
+              />
+
+              <SidebarLink
+                to="/redemptions"
+                icon={BadgePercent}
+                label="Pendentes"
+              />
+
+              <SidebarLink
+                to="/redemptions/history"
+                icon={History}
+                label="Histórico"
+              />
+            </SidebarSection>
+
+            <SidebarSection title="Configurações">
+              <SidebarLink
+                to="/settings"
+                icon={Settings}
+                label="Configurações"
+              />
+            </SidebarSection>
+          </>
+        )}
+      </div>
+
+      {/* FOOTER */}
+
+      <div className="p-4 border-t border-slate-800 bg-[#111827]">
+        <Button
+          onClick={signOut}
+          variant="ghost"
+          className="w-full justify-start gap-3 text-gray-300 hover:bg-red-500 hover:text-white rounded-xl"
+        >
+          <LogOut className="h-4 w-4" />
+          Sair
         </Button>
       </div>
     </aside>

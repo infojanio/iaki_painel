@@ -80,6 +80,11 @@ import { SubscriptionsListPage } from "./pages/app/subscriptions/SubscriptionsLi
 import { StoreCategoriesPage } from "./pages/app/storeCategories/StoreCategoriesPage";
 import { StorePointsPage } from "./pages/app/store-points/StorePointsPage";
 import { CustomersListPage } from "./pages/app/customers/CustomersListPage";
+import { StoreRewardNew } from "./pages/app/store-rewards/StoreRewardNew";
+import { StoreRewardsList } from "./pages/app/store-rewards/StoreRewardsList";
+import { StoreRewardEdit } from "./pages/app/store-rewards/StoreRewardEdit";
+import { RedemptionsList } from "./pages/app/redemptions/RedemptionsList";
+import { RedemptionHistory } from "./pages/app/redemptions/RedemptionHistory";
 
 export const router = createBrowserRouter([
   {
@@ -288,7 +293,46 @@ export const router = createBrowserRouter([
         ),
       },
 
-      /* ================= BANNERS (SUPER_ADMIN) ================= */
+      /* ================= STORE-REWARDS (ADMIN) ================= */
+
+      {
+        path: "/store-rewards",
+        element: <StoreRewardsList />,
+      },
+
+      {
+        path: "/store-rewards/new",
+
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <StoreRewardNew />
+          </RoleGuard>
+        ),
+      },
+
+      {
+        path: "/store-rewards/:rewardId/edit",
+
+        element: (
+          <RoleGuard allowedRoles={["ADMIN"]}>
+            <StoreRewardEdit />
+          </RoleGuard>
+        ),
+      },
+
+      /* ================= STORE-REWARDS-REDEMPTIONS (ADMIN) ================= */
+
+      {
+        path: "/redemptions",
+        element: <RedemptionsList />,
+      },
+
+      {
+        path: "/redemptions/history",
+        element: <RedemptionHistory />,
+      },
+
+      /* ================= BANNERS (ADMIN) ================= */
       {
         path: "banners",
         element: (
