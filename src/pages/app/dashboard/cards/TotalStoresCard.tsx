@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useDashboardMetrics } from '@/hooks/use-dashboard-metrics'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDashboardMetrics } from "@/hooks/use-dashboard-metrics";
 
 export function TotalStoresCard() {
-  const { data, isLoading } = useDashboardMetrics()
+  const { data, isLoading } = useDashboardMetrics();
 
   return (
     <Card>
@@ -11,9 +11,9 @@ export function TotalStoresCard() {
       </CardHeader>
       <CardContent>
         <span className="text-2xl font-bold">
-          {isLoading ? '...' : data?.totalStores ?? 0}
+          {isLoading ? "..." : (data?.totalStores ?? 0)}
         </span>
       </CardContent>
     </Card>
-  )
+  );
 }

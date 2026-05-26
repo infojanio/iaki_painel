@@ -12,7 +12,7 @@ export function TotalOrdersCard() {
       </CardHeader>
       <CardContent>
         <span className="text-2xl font-bold">
-          {isLoading ? "..." : data?.totalOrders ?? 0}
+          {isLoading ? "..." : (data?.totalOrders ?? 0)}
         </span>
       </CardContent>
     </Card>

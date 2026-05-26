@@ -16,7 +16,7 @@ export function TotalUsersCard() {
       </CardHeader>
       <CardContent>
         <span className="text-2xl font-bold">
-          {isLoading ? "..." : data?.totalUsers ?? 0}
+          {isLoading ? "..." : (data?.totalUsers ?? 0)}
         </span>
       </CardContent>
     </Card>

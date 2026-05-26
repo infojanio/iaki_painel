@@ -14,7 +14,7 @@ export function ActiveProductsCard() {
       </CardHeader>
       <CardContent>
         <span className="text-2xl font-bold">
-          {isLoading ? "..." : data?.activeProducts ?? 0}
+          {isLoading ? "..." : (data?.activeProducts ?? 0)}
         </span>
       </CardContent>
     </Card>
