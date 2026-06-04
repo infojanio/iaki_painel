@@ -1,4 +1,4 @@
-import { CashbackByMonthChart } from "@/pages/app/dashboard/charts/CashbackByMonthChart";
+import { OrdersByMonthChart } from "@/pages/app/dashboard/charts/OrdersByMonthChart";
 import { TopProductsTable } from "@/pages/app/dashboard/charts/TopProductsTable";
 
 export function DashboardCharts() {
@@ -7,7 +7,7 @@ export function DashboardCharts() {
       <div className="lg:col-span-2 bg-white border rounded-2xl p-5 shadow-sm">
         <h2 className="font-semibold mb-4">Pedidos por mês</h2>
 
-        <CashbackByMonthChart />
+        <OrdersByMonthChart />
       </div>
 
       <div className="bg-white border rounded-2xl p-5 shadow-sm">

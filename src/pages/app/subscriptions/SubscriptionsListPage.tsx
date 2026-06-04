@@ -468,14 +468,15 @@ export function SubscriptionsListPage() {
                         Alterar vencimento
                       </button>
 
-                      {sub.status === "EXPIRED" && (
-                        <button
-                          onClick={() => reactivateMutation.mutate(sub.id)}
-                          className="text-green-700 hover:underline text-left"
-                        >
-                          Reativar loja
-                        </button>
-                      )}
+                      {sub.status === "EXPIRED" ||
+                        (sub.status === "CANCELED" && (
+                          <button
+                            onClick={() => reactivateMutation.mutate(sub.id)}
+                            className="text-green-700 hover:underline text-left"
+                          >
+                            Reativar loja
+                          </button>
+                        ))}
 
                       <button
                         onClick={() => {

@@ -15,13 +15,10 @@ export function Dashboard() {
         <DashboardHeader />
 
         <DashboardAlerts />
-
-        <DashboardKPIs />
-
         <DashboardCharts />
-
         <DashboardOrders />
 
+        <DashboardKPIs />
         <DashboardLoyalty />
       </div>
     </>

@@ -1,43 +1,63 @@
 import { useQuery } from "@tanstack/react-query";
-
 import { api } from "@/lib/axios";
 
 export interface DashboardMetrics {
-  totalOrders: number;
-  totalUsers: number;
-  totalStores: number;
+  todayOrders: number;
+  weekOrders: number;
+  pendingOrders: number;
+
   activeProducts: number;
-  totalCashbackGenerated: number;
-  totalCashbackUsed: number;
-  cashbackByMonth: { month: string; total: number }[];
+  activeRewards: number;
+
+  pendingRedemptions: number;
+  confirmedRedemptions: number;
+
+  totalUsers: number;
+
+  ordersByMonth: {
+    month: string;
+    total: number;
+  }[];
+
+  topProducts: {
+    id: string;
+    name: string;
+    totalSold: number;
+  }[];
+
+  topUsers: {
+    id: string;
+    name: string;
+    email: string;
+    totalPoints: number;
+    totalRedemptions: number;
+  }[];
+
   latestValidatedOrders: {
     id: string;
-    total: number;
-    cashback: number;
+    totalAmount: number;
     userName: string;
-    storeName: string;
-    status: string;
-    validatedAt: string;
+    createdAt: string;
   }[];
+
   latestPendingOrders: {
     id: string;
-    total: number;
-    cashback: number;
+    totalAmount: number;
     userName: string;
-    storeName: string;
-    status: string;
-    validatedAt: string;
+    createdAt: string;
   }[];
-  topUsers: { id: string; email: string; name: string; total: number }[];
-  topProducts: { id: string; name: string; totalSold: number }[];
 }
 
 export function useDashboardMetrics() {
   return useQuery<DashboardMetrics>({
-    queryKey: ["dashboard-metrics"],
+    queryKey: ["dashboard-summary"],
+
     queryFn: async () => {
-      const response = await api.get("/dashboard/metrics");
-      return response.data;
+      const response = await api.get("/dashboard/summary");
+
+      return response.data?.summary ?? response.data;
     },
+
+    staleTime: 1000 * 60 * 5, // 5 min
   });
 }

@@ -1,37 +1,82 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Gift, ShoppingBag } from "lucide-react";
+
+import { getDashboardSummary } from "@/services/dashboard";
+
+import { useQuery } from "@tanstack/react-query";
 
 export function DashboardAlerts() {
+  const { data } = useQuery({
+    queryKey: ["dashboard-summary"],
+
+    queryFn: getDashboardSummary,
+  });
+
+  const pendingRedemptions = data?.pendingRedemptions ?? 0;
+
+  const pendingOrders = data?.pendingOrders ?? 0;
+
+  // 🔥 sem alertas
+  if (pendingRedemptions === 0 && pendingOrders === 0) {
+    return null;
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="border rounded-2xl bg-yellow-50 border-yellow-200 p-5">
-        <div className="flex gap-3">
-          <AlertTriangle className="text-yellow-600" />
+      {/* RESGATES PENDENTES */}
 
-          <div>
-            <h3 className="font-semibold text-yellow-800">
-              Resgates pendentes
-            </h3>
+      {pendingRedemptions > 0 && (
+        <div className="border rounded-2xl bg-yellow-50 border-yellow-200 p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-yellow-100 flex items-center justify-center">
+              <Gift className="text-yellow-600 h-6 w-6" />
+            </div>
 
-            <p className="text-sm text-yellow-700 mt-1">
-              Existem clientes aguardando aprovação de brindes.
-            </p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-yellow-900">
+                  Resgates pendentes
+                </h3>
+
+                <span className="bg-yellow-200 text-yellow-900 text-sm font-bold px-3 py-1 rounded-full">
+                  {pendingRedemptions}
+                </span>
+              </div>
+
+              <p className="text-sm text-yellow-800 mt-2">
+                Existem clientes aguardando aprovação de brindes.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="border rounded-2xl bg-blue-50 border-blue-200 p-5">
-        <div className="flex gap-3">
-          <AlertTriangle className="text-blue-600" />
+      {/* PEDIDOS PENDENTES */}
 
-          <div>
-            <h3 className="font-semibold text-blue-800">Fidelização ativa</h3>
+      {pendingOrders > 0 && (
+        <div className="border rounded-2xl bg-blue-50 border-blue-200 p-5 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
+              <ShoppingBag className="text-blue-600 h-6 w-6" />
+            </div>
 
-            <p className="text-sm text-blue-700 mt-1">
-              Seu sistema de recompensas está ativo.
-            </p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-blue-900">
+                  Pedidos pendentes
+                </h3>
+
+                <span className="bg-blue-200 text-blue-900 text-sm font-bold px-3 py-1 rounded-full">
+                  {pendingOrders}
+                </span>
+              </div>
+
+              <p className="text-sm text-blue-800 mt-2">
+                Existem pedidos aguardando validação da loja.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

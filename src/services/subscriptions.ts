@@ -27,7 +27,16 @@ export async function changePlan(planId: string) {
   return res.data;
 }
 
+export async function reactivateSubscription(storeId: string) {
+  const { data } = await api.patch(
+    `/subscriptions/store/${storeId}/reactivate`,
+  );
+
+  return data;
+}
+
 export async function cancelMySubscription() {
-  const res = await api.post("/stores/me/subscription/cancel");
-  return res.data;
+  const { data } = await api.patch("/stores/me/subscription/cancel");
+
+  return data;
 }
