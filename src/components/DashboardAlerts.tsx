@@ -1,10 +1,14 @@
 import { AlertTriangle, Gift, ShoppingBag } from "lucide-react";
-
+import { useSubscriptionStatus } from "@/hooks/use-subscription-status";
 import { getDashboardSummary } from "@/services/dashboard";
 
 import { useQuery } from "@tanstack/react-query";
 
 export function DashboardAlerts() {
+  const { data: subscriptionStatus } = useSubscriptionStatus();
+
+  const isSubscriptionExpired = subscriptionStatus?.expired;
+
   const { data } = useQuery({
     queryKey: ["dashboard-summary"],
 
@@ -22,6 +26,24 @@ export function DashboardAlerts() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      {/* ASSINATURA VENCIDA */}
+      {isSubscriptionExpired && (
+        <div className="border rounded-2xl bg-red-50 border-red-200 p-5">
+          <div className="flex gap-3">
+            <AlertTriangle className="text-red-600" />
+
+            <div>
+              <h3 className="font-semibold text-red-800">Assinatura vencida</h3>
+
+              <p className="text-sm text-red-700 mt-1">
+                Sua assinatura está vencida. Entre em contato com o
+                administrador ou solicite a renovação em "Meu Plano".
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* RESGATES PENDENTES */}
 
       {pendingRedemptions > 0 && (

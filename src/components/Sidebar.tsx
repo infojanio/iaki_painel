@@ -26,14 +26,17 @@ function SidebarLink({
   to,
   icon: Icon,
   label,
+  end = false,
 }: {
   to: string;
   icon: any;
   label: string;
+  end?: boolean;
 }) {
   return (
     <NavLink
       to={to}
+      end={end}
       className={({ isActive }) =>
         `group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
           isActive
@@ -231,6 +234,7 @@ export function Sidebar() {
                 to="/redemptions"
                 icon={BadgePercent}
                 label="Pendentes"
+                end
               />
 
               <SidebarLink

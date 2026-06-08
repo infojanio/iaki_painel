@@ -14,7 +14,6 @@ type Plan = {
   maxProducts: number | null;
   maxBanners: number | null;
   maxReels: number | null;
-  maxCategories?: number | null;
 };
 
 const WHATSAPP_NUMBER = "5562999756514";
@@ -58,7 +57,8 @@ export function MySubscriptionPage() {
   const usage = data?.usage;
 
   const hasSubscription = !!subscription;
-  const isExpired = subscription?.status === "EXPIRED";
+
+  const isExpired = data?.isExpired || subscription?.status === "EXPIRED";
 
   function formatPrice(value: number) {
     return new Intl.NumberFormat("pt-BR", {
@@ -76,11 +76,10 @@ export function MySubscriptionPage() {
     openWhatsApp(`
 Olá!
 
-Gostaria de renovar minha assinatura.
+Minha assinatura está vencida e gostaria de renová-la.
 
-Plano atual: ${subscription?.plan?.name ?? "Nenhum"}
-Store ID: ${subscription?.storeId ?? ""}
-    `);
+Por favor, me informe as opções de renovação disponíveis.
+  `);
   }
 
   function handleRequestPlan(planName?: string) {
@@ -99,42 +98,58 @@ Store ID: ${subscription?.storeId ?? ""}
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Minha Assinatura</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="bg-white border rounded-xl p-4">
+            <p className="text-sm text-gray-500">Plano</p>
+
+            <p className="text-xl font-bold">
+              {subscription?.plan?.name ?? "Sem plano"}
+            </p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-4">
+            <p className="text-sm text-gray-500">Status</p>
+
+            <p className="text-xl font-bold">
+              {isExpired ? "Expirado" : (subscription?.status ?? "-")}
+            </p>
+          </div>
+
+          <div className="bg-white border rounded-xl p-4">
+            <p className="text-sm text-gray-500">Vencimento</p>
+
+            <p className="text-xl font-bold">
+              {subscription?.endDate
+                ? new Date(subscription.endDate).toLocaleDateString("pt-BR")
+                : "-"}
+            </p>
+          </div>
+        </div>
+
         <p className="text-sm text-gray-500 mt-1">
           Consulte seu plano, limites e solicite renovação ou upgrade pelo
           atendimento.
         </p>
       </div>
 
-      {!hasSubscription && (
-        <div className="bg-yellow-50 border border-yellow-300 p-6 rounded-xl">
-          <p className="text-lg font-semibold text-yellow-700">
-            🚀 Comece agora
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            Você ainda não possui um plano ativo. Escolha um plano e fale com o
-            atendimento.
+      {isExpired && (
+        <div className="bg-red-50 border border-red-300 p-6 rounded-xl">
+          <h2 className="text-xl font-bold text-red-700">Assinatura vencida</h2>
+
+          <p className="mt-2 text-sm text-red-600">
+            Sua assinatura expirou e sua loja pode estar indisponível para os
+            clientes.
           </p>
 
-          <button
-            onClick={() => handleRequestPlan()}
-            className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg"
-          >
-            Falar com atendimento
-          </button>
-        </div>
-      )}
-
-      {hasSubscription && isExpired && (
-        <div className="bg-red-50 border border-red-300 text-red-700 p-5 rounded-xl">
-          <p className="text-lg font-semibold">🚫 Assinatura expirada</p>
-          <p className="text-sm mt-1">
-            Sua loja pode estar indisponível. Solicite a renovação pelo
-            atendimento.
+          <p className="mt-1 text-sm text-red-600">
+            Para renovar ou contratar um novo plano, entre em contato com o
+            suporte.
           </p>
 
           <button
             onClick={handleRenewPlan}
-            className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+            className="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
           >
             Renovar pelo WhatsApp
           </button>
@@ -198,12 +213,6 @@ Store ID: ${subscription?.storeId ?? ""}
               used={usage?.reels ?? 0}
               limit={subscription.plan?.maxReels}
             />
-
-            <UsageBar
-              label="Categorias"
-              used={usage?.categories ?? 0}
-              limit={subscription.plan?.maxCategories ?? null}
-            />
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -231,6 +240,7 @@ Store ID: ${subscription?.storeId ?? ""}
 
             {!isExpired && (
               <button
+                disabled={cancelMutation.isPending}
                 onClick={() => {
                   if (!confirm("Deseja realmente cancelar sua assinatura?"))
                     return;
@@ -279,7 +289,6 @@ Store ID: ${subscription?.storeId ?? ""}
                   <li>Produtos: {plan.maxProducts ?? "∞"}</li>
                   <li>Banners: {plan.maxBanners ?? "∞"}</li>
                   <li>Reels: {plan.maxReels ?? "∞"}</li>
-                  <li>Categorias: {plan.maxCategories ?? "∞"}</li>
                 </ul>
 
                 <button
@@ -309,7 +318,7 @@ function UsageBar({
   used: number;
   limit: number | null;
 }) {
-  const percentage = limit === null ? 0 : Math.min((used / limit) * 100, 100);
+  const percentage = !limit ? 0 : Math.min((used / limit) * 100, 100);
 
   const color =
     limit === null

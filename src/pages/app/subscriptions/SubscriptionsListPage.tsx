@@ -10,8 +10,15 @@ import {
 } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 
-import { listSubscriptions } from "@/services/subscriptions";
+import {
+  listSubscriptions,
+  reactivateStore,
+  renewSubscription,
+  suspendSubscription,
+  updateSubscriptionEndDate,
+} from "@/services/subscriptions";
 import { api } from "@/lib/axios";
+import { toast } from "sonner";
 
 type SubscriptionItem = {
   id: string;
@@ -58,9 +65,11 @@ export function SubscriptionsListPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [planFilter, setPlanFilter] = useState("ALL");
+  const [planFilter, setPlanFilter] = useState<string>("ALL");
 
-  const [selectedSub, setSelectedSub] = useState<SubscriptionItem | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<
+    string | null
+  >(null);
 
   const [newEndDate, setNewEndDate] = useState("");
 
@@ -71,6 +80,15 @@ export function SubscriptionsListPage() {
   const { data, isLoading } = useQuery<SubscriptionItem[]>({
     queryKey: ["subscriptions"],
     queryFn: listSubscriptions,
+  });
+
+  const { data: plans = [] } = useQuery({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const res = await api.get("/plans");
+
+      return res.data?.plans ?? [];
+    },
   });
 
   /* ======================================================
@@ -105,55 +123,61 @@ export function SubscriptionsListPage() {
      MUTATIONS
   ====================================================== */
 
-  const cancelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.post(`/subscriptions/${id}/cancel`);
-    },
+  const renewMutation = useMutation({
+    mutationFn: renewSubscription,
+
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["subscriptions"],
       });
+
+      toast.success("Assinatura renovada com sucesso!");
     },
   });
 
-  const renewMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.post(`/subscriptions/${id}/renew`);
-    },
+  const suspendMutation = useMutation({
+    mutationFn: suspendSubscription,
+
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["subscriptions"],
       });
+
+      toast.success("Assinatura suspensa.");
     },
   });
 
   const reactivateMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await api.post(`/subscriptions/${id}/reactivate`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["subscriptions"],
-      });
-    },
-  });
-
-  const updateDateMutation = useMutation({
-    mutationFn: async ({ id, endDate }: { id: string; endDate: string }) => {
-      await api.patch(`/subscriptions/${id}/end-date`, {
-        endDate,
-      });
-    },
+    mutationFn: reactivateStore,
 
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["subscriptions"],
       });
 
-      setSelectedSub(null);
+      toast.success("Loja reativada.");
     },
   });
 
+  const updateEndDateMutation = useMutation({
+    mutationFn: ({
+      subscriptionId,
+      endDate,
+    }: {
+      subscriptionId: string;
+      endDate: string;
+    }) => updateSubscriptionEndDate(subscriptionId, endDate),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions"],
+      });
+
+      setSelectedSubscription(null);
+
+      toast.success("Vencimento atualizado.");
+    },
+  });
   /* ======================================================
      HELPERS
   ====================================================== */
@@ -245,7 +269,7 @@ export function SubscriptionsListPage() {
 
     const matchStatus = statusFilter === "ALL" || sub.status === statusFilter;
 
-    const matchPlan = planFilter === "ALL" || sub.plan.name === planFilter;
+    const matchPlan = planFilter === "ALL" || sub.plan.id === planFilter;
 
     return matchSearch && matchStatus && matchPlan;
   });
@@ -258,7 +282,9 @@ export function SubscriptionsListPage() {
     total: filteredData.length,
     active: filteredData.filter((s) => s.status === "ACTIVE").length,
 
-    trial: filteredData.filter((s) => s.status === "TRIALING").length,
+    // trial: filteredData.filter((s) => s.status === "TRIALING").length,
+
+    canceled: filteredData.filter((s) => s.status === "CANCELED").length,
 
     expired: filteredData.filter((s) => s.status === "EXPIRED").length,
   };
@@ -309,9 +335,9 @@ export function SubscriptionsListPage() {
         />
 
         <CardKpi
-          title="Trial"
-          value={stats.trial}
-          icon={<RefreshCcw className="h-5 w-5 text-yellow-600" />}
+          title="Canceladas"
+          value={stats.canceled}
+          icon={<ShieldAlert className="h-5 w-5 text-red-600" />}
         />
 
         <CardKpi
@@ -358,13 +384,11 @@ export function SubscriptionsListPage() {
         >
           <option value="ALL">Todos planos</option>
 
-          <option value="FREE">FREE</option>
-
-          <option value="BASICO">BÁSICO</option>
-
-          <option value="PRO">INTERMEDIÁRIO</option>
-
-          <option value="PREMIUM">PREMIUM</option>
+          {plans.map((plan: any) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -451,7 +475,16 @@ export function SubscriptionsListPage() {
                   <td className="px-4 py-4">
                     <div className="flex flex-col gap-2 text-xs">
                       <button
-                        onClick={() => renewMutation.mutate(sub.id)}
+                        onClick={() => {
+                          if (
+                            !confirm(
+                              "Renovar esta assinatura por mais 30 dias?",
+                            )
+                          )
+                            return;
+
+                          renewMutation.mutate(sub.id);
+                        }}
                         className="text-green-600 hover:underline text-left"
                       >
                         Renovar +30 dias
@@ -459,7 +492,7 @@ export function SubscriptionsListPage() {
 
                       <button
                         onClick={() => {
-                          setSelectedSub(sub);
+                          setSelectedSubscription(sub.id);
 
                           setNewEndDate(sub.endDate.slice(0, 10));
                         }}
@@ -468,26 +501,29 @@ export function SubscriptionsListPage() {
                         Alterar vencimento
                       </button>
 
-                      {sub.status === "EXPIRED" ||
-                        (sub.status === "CANCELED" && (
-                          <button
-                            onClick={() => reactivateMutation.mutate(sub.id)}
-                            className="text-green-700 hover:underline text-left"
-                          >
-                            Reativar loja
-                          </button>
-                        ))}
+                      {(sub.status === "EXPIRED" ||
+                        sub.status === "CANCELED") && (
+                        <button
+                          onClick={() => {
+                            if (!confirm("Reativar esta loja?")) return;
+
+                            reactivateMutation.mutate(sub.store.id);
+                          }}
+                          className="text-green-700 hover:underline text-left"
+                        >
+                          Reativar loja
+                        </button>
+                      )}
 
                       <button
                         onClick={() => {
-                          if (!confirm("Suspender assinatura desta loja?"))
-                            return;
+                          if (!confirm("Suspender acesso desta loja?")) return;
 
-                          cancelMutation.mutate(sub.id);
+                          suspendMutation.mutate(sub.id);
                         }}
                         className="text-red-600 hover:underline text-left"
                       >
-                        Suspender assinatura
+                        Suspender acesso{" "}
                       </button>
                     </div>
                   </td>
@@ -500,7 +536,13 @@ export function SubscriptionsListPage() {
 
       {/* MODAL */}
 
-      <Dialog open={!!selectedSub} onClose={() => setSelectedSub(null)}>
+      <Dialog
+        open={Boolean(selectedSubscription)}
+        onClose={() => {
+          setSelectedSubscription(null);
+          setNewEndDate("");
+        }}
+      >
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl w-[420px] space-y-4 shadow-xl">
             <h2 className="text-lg font-bold">Alterar vencimento</h2>
@@ -514,19 +556,21 @@ export function SubscriptionsListPage() {
 
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setSelectedSub(null)}
+                onClick={() => setSelectedSubscription(null)}
                 className="px-4 py-2 rounded border"
               >
                 Cancelar
               </button>
 
               <button
-                onClick={() =>
-                  updateDateMutation.mutate({
-                    id: selectedSub!.id,
+                onClick={() => {
+                  if (!selectedSubscription) return;
+
+                  updateEndDateMutation.mutate({
+                    subscriptionId: selectedSubscription,
                     endDate: newEndDate,
-                  })
-                }
+                  });
+                }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg"
               >
                 Salvar
