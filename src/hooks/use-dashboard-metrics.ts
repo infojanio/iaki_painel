@@ -12,6 +12,11 @@ export interface DashboardMetrics {
   pendingRedemptions: number;
   confirmedRedemptions: number;
 
+  totalCashbackGenerated: number;
+  totalCashbackUsed: number;
+  totalOrders: number;
+  totalStores: number;
+
   totalUsers: number;
 
   ordersByMonth: {
