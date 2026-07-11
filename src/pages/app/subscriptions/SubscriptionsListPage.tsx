@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Loader2,
+  PlusCircle,
   Search,
   ShieldAlert,
   Store,
@@ -10,6 +11,7 @@ import {
 import { Dialog } from "@headlessui/react";
 
 import {
+  createSubscription,
   listSubscriptions,
   reactivateStore,
   renewSubscription,
@@ -19,12 +21,17 @@ import {
 import { api } from "@/lib/axios";
 import { toast } from "sonner";
 
+type SubscriptionStatus = "ACTIVE" | "TRIALING" | "EXPIRED" | "CANCELED";
+
+type CreateSubscriptionStatus = "ACTIVE" | "TRIALING";
+
 type SubscriptionItem = {
   id: string;
-  status: "ACTIVE" | "TRIALING" | "EXPIRED" | "CANCELED";
+  status: SubscriptionStatus;
   isTrial: boolean;
   startDate: string;
   endDate: string;
+  createdAt?: string;
   daysRemaining: number;
 
   usage?: {
@@ -52,6 +59,19 @@ type SubscriptionItem = {
   };
 };
 
+type PlanItem = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+type StoreOption = {
+  id: string;
+  name: string;
+  cnpj?: string | null;
+  city?: string | { name?: string | null } | null;
+};
+
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "Ativo",
   TRIALING: "Período grátis",
@@ -72,6 +92,22 @@ export function SubscriptionsListPage() {
 
   const [newEndDate, setNewEndDate] = useState("");
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const [createForm, setCreateForm] = useState<{
+    storeId: string;
+    planId: string;
+    status: CreateSubscriptionStatus;
+    startDate: string;
+    endDate: string;
+  }>({
+    storeId: "",
+    planId: "",
+    status: "ACTIVE",
+    startDate: "",
+    endDate: "",
+  });
+
   /* ======================================================
      QUERY
   ====================================================== */
@@ -81,18 +117,38 @@ export function SubscriptionsListPage() {
     queryFn: listSubscriptions,
   });
 
-  const { data: plans = [] } = useQuery({
+  const { data: plans = [] } = useQuery<PlanItem[]>({
     queryKey: ["plans"],
     queryFn: async () => {
       const res = await api.get("/plans");
 
-      return res.data?.plans ?? [];
+      return res.data?.plans ?? res.data ?? [];
+    },
+  });
+
+  const { data: stores = [] } = useQuery<StoreOption[]>({
+    queryKey: ["stores"],
+    queryFn: async () => {
+      const res = await api.get("/stores");
+
+      return res.data?.stores ?? res.data ?? [];
     },
   });
 
   /* ======================================================
      MANTÉM APENAS A ASSINATURA MAIS RECENTE POR LOJA
   ====================================================== */
+
+  const STATUS_PRIORITY: Record<SubscriptionStatus, number> = {
+    ACTIVE: 4,
+    TRIALING: 3,
+    EXPIRED: 2,
+    CANCELED: 1,
+  };
+
+  function getSubscriptionDate(sub: SubscriptionItem) {
+    return new Date(sub.createdAt ?? sub.startDate).getTime();
+  }
 
   const uniqueSubscriptions = useMemo(() => {
     if (!data) return [];
@@ -107,11 +163,27 @@ export function SubscriptionsListPage() {
         return;
       }
 
-      const currentDate = new Date(current.startDate).getTime();
-      const nextDate = new Date(sub.startDate).getTime();
+      const currentPriority = STATUS_PRIORITY[current.status] ?? 0;
+      const nextPriority = STATUS_PRIORITY[sub.status] ?? 0;
 
-      if (nextDate > currentDate) {
+      /**
+       * 1. ACTIVE/TRIALING sempre ganha de CANCELED/EXPIRED
+       */
+      if (nextPriority > currentPriority) {
         map.set(sub.store.id, sub);
+        return;
+      }
+
+      /**
+       * 2. Se tiverem o mesmo status/prioridade, pega a mais nova
+       */
+      if (nextPriority === currentPriority) {
+        const currentDate = getSubscriptionDate(current);
+        const nextDate = getSubscriptionDate(sub);
+
+        if (nextDate > currentDate) {
+          map.set(sub.store.id, sub);
+        }
       }
     });
 
@@ -121,6 +193,32 @@ export function SubscriptionsListPage() {
   /* ======================================================
      MUTATIONS
   ====================================================== */
+
+  const createSubscriptionMutation = useMutation({
+    mutationFn: createSubscription,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["subscriptions"],
+      });
+
+      setIsCreateModalOpen(false);
+
+      setCreateForm({
+        storeId: "",
+        planId: "",
+        status: "ACTIVE",
+        startDate: "",
+        endDate: "",
+      });
+
+      toast.success("Assinatura criada com sucesso!");
+    },
+
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message ?? "Erro ao criar assinatura.");
+    },
+  });
 
   const renewMutation = useMutation({
     mutationFn: renewSubscription,
@@ -177,6 +275,7 @@ export function SubscriptionsListPage() {
       toast.success("Vencimento atualizado.");
     },
   });
+
   /* ======================================================
      HELPERS
   ====================================================== */
@@ -190,6 +289,16 @@ export function SubscriptionsListPage() {
 
   function formatDate(value: string) {
     return new Date(value).toLocaleDateString("pt-BR");
+  }
+
+  function getStoreCityName(store: StoreOption) {
+    if (!store.city) return null;
+
+    if (typeof store.city === "string") {
+      return store.city;
+    }
+
+    return store.city.name ?? null;
   }
 
   function getStatusBadge(status: string) {
@@ -213,46 +322,39 @@ export function SubscriptionsListPage() {
     }
   }
 
-  /*  
-  function getUsageColor(percentage: number) {
-    if (percentage >= 100) return "bg-red-500";
-    if (percentage >= 80) return "bg-yellow-500";
-    return "bg-blue-500";
+  function handleOpenCreateModal() {
+    setCreateForm({
+      storeId: "",
+      planId: "",
+      status: "ACTIVE",
+      startDate: new Date().toISOString().slice(0, 10),
+      endDate: "",
+    });
+
+    setIsCreateModalOpen(true);
   }
 
-  function renderUsage(used: number, limit: number | null) {
-    if (limit === null) {
-      return (
-        <div className="text-xs font-medium text-green-600">Ilimitado</div>
-      );
+  function handleCreateSubscription(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!createForm.storeId) {
+      toast.error("Selecione uma loja.");
+      return;
     }
 
-    const percentage = (used / limit) * 100;
+    if (!createForm.planId) {
+      toast.error("Selecione um plano.");
+      return;
+    }
 
-    return (
-      <div className="min-w-[120px]">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span>
-            {used} / {limit}
-          </span>
-
-          {percentage >= 80 && (
-            <AlertTriangle className="h-3 w-3 text-yellow-600" />
-          )}
-        </div>
-
-        <div className="h-2 rounded bg-gray-200 overflow-hidden">
-          <div
-            className={`h-2 ${getUsageColor(percentage)}`}
-            style={{
-              width: `${Math.min(percentage, 100)}%`,
-            }}
-          />
-        </div>
-      </div>
-    );
+    createSubscriptionMutation.mutate({
+      storeId: createForm.storeId,
+      planId: createForm.planId,
+      status: createForm.status,
+      startDate: createForm.startDate || undefined,
+      endDate: createForm.endDate || undefined,
+    });
   }
-  */
 
   /* ======================================================
      FILTROS
@@ -280,11 +382,7 @@ export function SubscriptionsListPage() {
   const stats = {
     total: filteredData.length,
     active: filteredData.filter((s) => s.status === "ACTIVE").length,
-
-    // trial: filteredData.filter((s) => s.status === "TRIALING").length,
-
     canceled: filteredData.filter((s) => s.status === "CANCELED").length,
-
     expired: filteredData.filter((s) => s.status === "EXPIRED").length,
   };
 
@@ -308,7 +406,7 @@ export function SubscriptionsListPage() {
     <div className="flex flex-col gap-6 p-6">
       {/* HEADER */}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Gestão de Assinaturas</h1>
 
@@ -316,6 +414,15 @@ export function SubscriptionsListPage() {
             Situação atual das lojas e planos ativos
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={handleOpenCreateModal}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Nova assinatura
+        </button>
       </div>
 
       {/* KPIs */}
@@ -366,13 +473,9 @@ export function SubscriptionsListPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="ALL">Todos status</option>
-
           <option value="ACTIVE">Ativo</option>
-
           <option value="TRIALING">Período grátis</option>
-
           <option value="EXPIRED">Expirado</option>
-
           <option value="CANCELED">Cancelado</option>
         </select>
 
@@ -383,7 +486,7 @@ export function SubscriptionsListPage() {
         >
           <option value="ALL">Todos planos</option>
 
-          {plans.map((plan: any) => (
+          {plans.map((plan) => (
             <option key={plan.id} value={plan.id}>
               {plan.name}
             </option>
@@ -398,13 +501,9 @@ export function SubscriptionsListPage() {
           <thead className="bg-gray-50 text-gray-600 border-b">
             <tr>
               <th className="px-4 py-4 text-left">Loja</th>
-
               <th className="px-4 py-4 text-left">Plano Atual</th>
-
               <th className="px-4 py-4 text-left">Status</th>
-
               <th className="px-4 py-4 text-left">Vencimento</th>
-
               <th className="px-4 py-4 text-left">Ações</th>
             </tr>
           </thead>
@@ -479,8 +578,9 @@ export function SubscriptionsListPage() {
                             !confirm(
                               "Renovar esta assinatura por mais 30 dias?",
                             )
-                          )
+                          ) {
                             return;
+                          }
 
                           renewMutation.mutate(sub.id);
                         }}
@@ -492,7 +592,6 @@ export function SubscriptionsListPage() {
                       <button
                         onClick={() => {
                           setSelectedSubscription(sub.id);
-
                           setNewEndDate(sub.endDate.slice(0, 10));
                         }}
                         className="text-blue-600 hover:underline text-left"
@@ -522,18 +621,187 @@ export function SubscriptionsListPage() {
                         }}
                         className="text-red-600 hover:underline text-left"
                       >
-                        Suspender acesso{" "}
+                        Suspender acesso
                       </button>
                     </div>
                   </td>
                 </tr>
               );
             })}
+
+            {filteredData.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-10 text-center text-sm text-gray-500"
+                >
+                  Nenhuma assinatura encontrada.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL */}
+      {/* MODAL - NOVA ASSINATURA */}
+
+      <Dialog
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      >
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <Dialog.Panel className="bg-white p-6 rounded-2xl w-[520px] max-w-[92vw] space-y-5 shadow-xl">
+            <div>
+              <Dialog.Title className="text-lg font-bold">
+                Nova assinatura
+              </Dialog.Title>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Vincule uma loja a um plano. Ao confirmar, o backend deve
+                cancelar assinaturas abertas anteriores da loja e criar a nova.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateSubscription} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Loja</label>
+
+                <select
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  value={createForm.storeId}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      storeId: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="">Selecione uma loja</option>
+
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                      {getStoreCityName(store)
+                        ? ` - ${getStoreCityName(store)}`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Plano</label>
+
+                <select
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  value={createForm.planId}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      planId: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="">Selecione um plano</option>
+
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - {formatPrice(plan.price)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+
+                <select
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  value={createForm.status}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      status: e.target.value as CreateSubscriptionStatus,
+                    }))
+                  }
+                >
+                  <option value="ACTIVE">Ativo</option>
+                  <option value="TRIALING">Período grátis</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Data de início</label>
+
+                  <input
+                    type="date"
+                    value={createForm.startDate}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        startDate: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Data de vencimento
+                  </label>
+
+                  <input
+                    type="date"
+                    value={createForm.endDate}
+                    onChange={(e) =>
+                      setCreateForm((prev) => ({
+                        ...prev,
+                        endDate: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+
+                  <p className="text-xs text-gray-400">
+                    Opcional. Se ficar vazio, o backend calcula pela duração do
+                    plano.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
+                Atenção: esta ação pode substituir a assinatura ativa atual da
+                loja, conforme a regra implementada no backend.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border text-sm"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={createSubscriptionMutation.isPending}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {createSubscriptionMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  Salvar assinatura
+                </button>
+              </div>
+            </form>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* MODAL - ALTERAR VENCIMENTO */}
 
       <Dialog
         open={Boolean(selectedSubscription)}
@@ -543,8 +811,10 @@ export function SubscriptionsListPage() {
         }}
       >
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl w-[420px] space-y-4 shadow-xl">
-            <h2 className="text-lg font-bold">Alterar vencimento</h2>
+          <Dialog.Panel className="bg-white p-6 rounded-2xl w-[420px] space-y-4 shadow-xl">
+            <Dialog.Title className="text-lg font-bold">
+              Alterar vencimento
+            </Dialog.Title>
 
             <input
               type="date"
@@ -575,7 +845,7 @@ export function SubscriptionsListPage() {
                 Salvar
               </button>
             </div>
-          </div>
+          </Dialog.Panel>
         </div>
       </Dialog>
     </div>

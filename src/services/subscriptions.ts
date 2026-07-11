@@ -1,6 +1,32 @@
 import { api } from "@/lib/axios";
 import axios from "axios";
 
+export type CreateSubscriptionPayload = {
+  storeId: string;
+  planId: string;
+  status?: "ACTIVE" | "TRIALING";
+  startDate?: string;
+  endDate?: string;
+};
+
+export async function createSubscription({
+  storeId,
+  planId,
+  status = "ACTIVE",
+  startDate,
+  endDate,
+}: CreateSubscriptionPayload) {
+  const response = await api.post("/subscription", {
+    storeId,
+    planId,
+    status,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+  });
+
+  return response.data;
+}
+
 export async function listSubscriptions() {
   const response = await api.get("/subscriptions");
   return response.data?.subscriptions ?? response.data ?? [];
