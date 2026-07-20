@@ -167,10 +167,6 @@ export function Sidebar() {
               />
             </SidebarSection>
 
-            <SidebarSection title="Publicidade">
-              <SidebarLink to="/reels" icon={Clapperboard} label="Reels" />
-            </SidebarSection>
-
             <SidebarSection title="Cobrança">
               <SidebarLink to="/plans" icon={CreditCard} label="Planos" />
 
@@ -205,6 +201,7 @@ export function Sidebar() {
 
             <SidebarSection title="Publicidade">
               <SidebarLink to="/banners" icon={Megaphone} label="Banners" />
+              <SidebarLink to="/reels" icon={Clapperboard} label="Reels" />
             </SidebarSection>
 
             <SidebarSection title="Vinculação">
