@@ -9,7 +9,7 @@ import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 
 type StoreForm = {
   name: string;
-  slug: string;
+  slug?: string;
   isActive: boolean;
   latitude: string;
   longitude: string;
@@ -37,6 +37,7 @@ export function StoreNew() {
     defaultValues: { isActive: true },
   });
 
+  const slugUrl = watch("slug");
   const avatarUrl = watch("avatar");
 
   useEffect(() => {
@@ -55,6 +56,14 @@ export function StoreNew() {
     },
   });
 
+  async function handleSlugUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadToCloudinary(file);
+    setValue("slug", url);
+  }
+
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -66,7 +75,7 @@ export function StoreNew() {
   async function onSubmit(data: StoreForm) {
     const payload: StoreCreatePayload = {
       name: data.name.trim(),
-      slug: data.slug.trim(),
+      slug: data.slug,
       isActive: !!data.isActive,
       latitude: Number(data.latitude),
       longitude: Number(data.longitude),
@@ -99,13 +108,18 @@ export function StoreNew() {
           <div>
             <label className="block text-sm font-semibold">Slug</label>
             <input
-              {...register("slug")}
-              className="w-full border p-2 rounded"
-              required
+              type="file"
+              accept="image/*"
+              onChange={handleSlugUpload}
+              className="block mt-1"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Ex: rhadar-campos-belos
-            </p>
+            {slugUrl && (
+              <img
+                src={slugUrl}
+                alt="Preview"
+                className="w-28 h-28 object-cover mt-2 rounded border"
+              />
+            )}
           </div>
 
           <div>

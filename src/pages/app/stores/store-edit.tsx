@@ -12,7 +12,7 @@ import { getCities, City } from "@/services/cities";
 
 type StoreForm = {
   name: string;
-  slug: string;
+  slug?: string;
   isActive: boolean;
   latitude: string;
   longitude: string;
@@ -40,6 +40,8 @@ export function StoreEdit() {
     formState: { isSubmitting },
   } = useForm<StoreForm>();
 
+  const slugUrl = watch("slug");
+
   const avatarUrl = watch("avatar");
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export function StoreEdit() {
 
       reset({
         name: store.name,
-        slug: store.slug,
+        slug: store.slug ?? "",
         isActive: store.isActive,
         latitude: String(store.latitude),
         longitude: String(store.longitude),
@@ -84,6 +86,14 @@ export function StoreEdit() {
     },
   });
 
+  async function handleSlugUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadToCloudinary(file);
+    setValue("slug", url, { shouldDirty: true });
+  }
+
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -95,7 +105,7 @@ export function StoreEdit() {
   async function onSubmit(data: StoreForm) {
     const payload: StoreUpdatePayload = {
       name: data.name.trim(),
-      slug: data.slug.trim(),
+      slug: data.slug,
       isActive: !!data.isActive,
       latitude: Number(data.latitude),
       longitude: Number(data.longitude),
@@ -130,10 +140,20 @@ export function StoreEdit() {
           <div>
             <label className="block text-sm font-semibold">Slug</label>
             <input
-              {...register("slug")}
-              className="w-full border p-2 rounded"
-              required
+              type="file"
+              accept="image/*"
+              onChange={handleSlugUpload}
+              className="block mt-1"
             />
+            {slugUrl ? (
+              <img
+                src={slugUrl}
+                alt="Preview"
+                className="w-28 h-28 object-cover mt-2 rounded border"
+              />
+            ) : (
+              <p className="text-gray-600 mt-2">Sem slug.</p>
+            )}
           </div>
 
           <div>

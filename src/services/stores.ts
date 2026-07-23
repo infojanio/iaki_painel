@@ -18,7 +18,7 @@ export interface Store {
 
 export type StoreCreatePayload = {
   name: string;
-  slug: string;
+  slug?: string;
   isActive: boolean;
   latitude: number;
   longitude: number;
