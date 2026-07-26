@@ -7,8 +7,7 @@ export function DashboardHeader() {
     <div className="flex items-center justify-between">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Olá, {user?.name} 👋
-          {user?.store?.name} 👋
+          Olá, {user?.name} 👋 Loja {user?.store?.name} 👋
         </h1>
 
         <p className="text-muted-foreground mt-1">
