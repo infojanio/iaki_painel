@@ -31,7 +31,7 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
   function handleChange(
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) {
     const { name, value, type, checked } = e.target as HTMLInputElement;
 
@@ -116,7 +116,7 @@ export function ProductForm({ product, onSubmit }: ProductFormProps) {
           type="number"
           value={formData.cashback_percentage || 0}
           onChange={handleChange}
-          placeholder="Cashback (%)"
+          placeholder="Desconto (%)"
           className="w-full rounded border p-2"
         />
       </div>

@@ -15,7 +15,7 @@ export function ProductTable({ products, onDelete }: ProductTableProps) {
         <tr className="bg-gray-100 text-left">
           <th className="p-2">Nome</th>
           <th className="p-2">Preço</th>
-          <th className="p-2">Cashback (%)</th>
+          <th className="p-2">Desconto (%)</th>
           <th className="p-2">Status</th>
           <th className="p-2">Ações</th>
         </tr>

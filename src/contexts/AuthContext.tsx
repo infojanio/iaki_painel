@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 import { api } from "@/lib/axios";
+import { Store } from "@/services/stores";
 
 interface User {
   id: string;
@@ -8,6 +9,7 @@ interface User {
   email: string;
   role: "SUPER_ADMIN" | "ADMIN" | "USER";
   storeId: string;
+  store: Store | null;
 }
 
 interface AuthContextType {
