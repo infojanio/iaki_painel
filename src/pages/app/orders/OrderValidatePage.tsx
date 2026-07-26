@@ -387,11 +387,6 @@ export function OrderValidationPage() {
 
                     const itemDiscount = calculateItemDiscount(item);
 
-                    const itemPaidAmount = Math.max(
-                      itemSubtotal - itemDiscount,
-                      0,
-                    );
-
                     return (
                       <div
                         key={product?.id ?? `${order.id}-${index}`}
