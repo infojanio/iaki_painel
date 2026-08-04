@@ -14,6 +14,11 @@ type Product = {
   name: string;
   price: number | string;
   image: string | null;
+
+  /*
+   * No modelo atual, este percentual é usado
+   * para montar um valor comparativo.
+   */
   cashbackPercentage: number | string | null;
 };
 
@@ -28,14 +33,13 @@ type Order = {
   createdAt: string;
 
   /*
-   * Valor bruto dos produtos,
-   * antes do desconto.
+   * Valor real que o cliente paga.
    */
   totalAmount: number | string;
 
   /*
-   * Desconto oficial registrado
-   * no momento do pedido.
+   * Mantido no tipo porque existe no banco,
+   * mas não participa do cálculo atual.
    */
   discountApplied?: number | string | null;
 
@@ -63,7 +67,7 @@ const STATUS_OPTIONS: Array<{
   },
   {
     value: "EXPIRED",
-    label: "Expirado",
+    label: "Cancelado",
   },
 ];
 
@@ -83,11 +87,15 @@ function formatCurrency(value?: number | string | null) {
   });
 }
 
-function formatOrderDate(value: string) {
+function formatOrderDate(value?: string | null) {
+  if (!value) {
+    return "Data não informada";
+  }
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Data não informada";
+    return "Data inválida";
   }
 
   return format(date, "dd/MM/yyyy 'às' HH:mm", {
@@ -98,11 +106,15 @@ function formatOrderDate(value: string) {
 function getProductDiscountPercentage(product: Product | null) {
   const percentage = toSafeNumber(product?.cashbackPercentage);
 
+  /*
+   * Evita percentuais negativos
+   * ou superiores a 100%.
+   */
   return Math.min(Math.max(percentage, 0), 100);
 }
 
 function calculateItemSubtotal(item: OrderItem) {
-  const price = toSafeNumber(item.product?.price);
+  const price = Math.max(toSafeNumber(item.product?.price), 0);
 
   const quantity = Math.max(toSafeNumber(item.quantity), 0);
 
@@ -110,13 +122,15 @@ function calculateItemSubtotal(item: OrderItem) {
 }
 
 /*
- * Este desconto por item é apenas visual.
+ * Benefício visual do produto.
  *
- * Ele utiliza o percentual atual do produto,
- * que pode ter mudado depois da criação
- * do pedido.
+ * Exemplo:
+ * preço pago: R$ 100
+ * percentual: 10%
+ * benefício exibido: R$ 10
+ * valor comparativo: R$ 110
  */
-function calculateItemEstimatedDiscount(item: OrderItem) {
+function calculateItemVisualDiscount(item: OrderItem) {
   const subtotal = calculateItemSubtotal(item);
 
   const percentage = getProductDiscountPercentage(item.product);
@@ -124,57 +138,42 @@ function calculateItemEstimatedDiscount(item: OrderItem) {
   return subtotal * (percentage / 100);
 }
 
-function calculateEstimatedOrderDiscount(order: Order) {
+/*
+ * Soma dos benefícios visuais
+ * de todos os produtos.
+ */
+function calculateOrderVisualDiscount(order: Order) {
   return order.items.reduce(
-    (totalDiscount, item) =>
-      totalDiscount + calculateItemEstimatedDiscount(item),
+    (totalDiscount, item) => totalDiscount + calculateItemVisualDiscount(item),
     0,
   );
 }
 
-function calculateGrossAmount(order: Order) {
+/*
+ * totalAmount já representa o
+ * valor real pago pelo cliente.
+ */
+function calculatePaidAmount(order: Order) {
   return Math.max(toSafeNumber(order.totalAmount), 0);
 }
 
-function hasStoredDiscount(order: Order) {
-  return order.discountApplied !== undefined && order.discountApplied !== null;
-}
-
 /*
- * Desconto oficial:
- * utiliza discountApplied salvo
- * no pedido.
+ * Valor comparativo apresentado:
  *
- * O cálculo pelos itens fica apenas
- * como fallback quando a API ainda
- * não estiver enviando o campo.
+ * valor pago + benefício visual.
  */
-function calculateOrderDiscount(order: Order) {
-  const grossAmount = calculateGrossAmount(order);
+function calculateReferenceAmount(order: Order) {
+  const paidAmount = calculatePaidAmount(order);
 
-  const discount = hasStoredDiscount(order)
-    ? toSafeNumber(order.discountApplied)
-    : calculateEstimatedOrderDiscount(order);
+  const visualDiscount = calculateOrderVisualDiscount(order);
 
-  return Math.min(Math.max(discount, 0), grossAmount);
+  return paidAmount + visualDiscount;
 }
 
 /*
- * Valor efetivamente pago:
+ * Regra de pontuação:
  *
- * total bruto - desconto aplicado.
- */
-function calculatePaidAmount(order: Order) {
-  const grossAmount = calculateGrossAmount(order);
-
-  const discountApplied = calculateOrderDiscount(order);
-
-  return Math.max(grossAmount - discountApplied, 0);
-}
-
-/*
- * Regra:
- * 1 ponto a cada R$ 10
+ * 1 ponto para cada R$ 10
  * efetivamente pagos.
  */
 function calculateOrderPoints(order: Order) {
@@ -226,6 +225,7 @@ export function OrderValidationPage() {
         const response = await api.get<OrdersResponse>("/orders", {
           params: {
             page: pageNumber,
+
             status: selectedStatus,
           },
         });
@@ -282,6 +282,11 @@ export function OrderValidationPage() {
 
   const validateOrder = useMutation({
     mutationFn: async (orderId: string) => {
+      /*
+       * O frontend envia apenas o ID.
+       * O backend deve calcular e creditar
+       * oficialmente os pontos.
+       */
       const response = await api.patch(`/orders/${orderId}/validate`);
 
       return response.data;
@@ -298,11 +303,13 @@ export function OrderValidationPage() {
 
       const pointsMessage =
         data?.pointsEarned !== undefined
-          ? `\n\nPontos creditados pelo servidor: ${Number(data.pointsEarned)}`
+          ? `\n\nPontos creditados: ${Number(data.pointsEarned)}`
           : "";
 
       window.alert(
-        `${data?.message ?? "Pedido validado com sucesso!"}${pointsMessage}`,
+        `${
+          data?.message ?? "Pedido validado e pontos acumulados com sucesso!"
+        }${pointsMessage}`,
       );
     },
 
@@ -366,15 +373,20 @@ export function OrderValidationPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
+      {/* HEADER */}
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">
           Validação de pontos
         </h1>
 
         <p className="mt-1 text-sm text-gray-500">
-          Confira os produtos, descontos e pontos antes de validar o pedido.
+          Confira os produtos, o benefício exibido e os pontos antes de validar
+          o pedido.
         </p>
       </div>
+
+      {/* FILTROS */}
 
       <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border bg-white p-4 shadow-sm">
         <select
@@ -402,6 +414,8 @@ export function OrderValidationPage() {
         />
       </div>
 
+      {/* LISTAGEM */}
+
       {isLoading && orders.length === 0 ? (
         <div className="rounded-xl border bg-white p-8 text-center text-gray-500">
           Carregando pedidos...
@@ -417,21 +431,13 @@ export function OrderValidationPage() {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => {
-            const grossAmount = calculateGrossAmount(order);
-
-            const estimatedDiscount = calculateEstimatedOrderDiscount(order);
-
-            const orderDiscount = calculateOrderDiscount(order);
-
             const paidAmount = calculatePaidAmount(order);
 
+            const visualDiscount = calculateOrderVisualDiscount(order);
+
+            const referenceAmount = calculateReferenceAmount(order);
+
             const orderPoints = calculateOrderPoints(order);
-
-            const storedDiscountAvailable = hasStoredDiscount(order);
-
-            const hasDiscountDifference =
-              storedDiscountAvailable &&
-              Math.abs(estimatedDiscount - orderDiscount) > 0.01;
 
             const isValidating =
               validateOrder.isPending && validateOrder.variables === order.id;
@@ -444,6 +450,8 @@ export function OrderValidationPage() {
                 key={order.id}
                 className="rounded-xl border bg-white p-4 shadow-sm sm:p-5"
               >
+                {/* PEDIDO */}
+
                 <div className="mb-3 flex items-start justify-between gap-4">
                   <div>
                     <p className="font-semibold text-gray-800">
@@ -468,33 +476,7 @@ export function OrderValidationPage() {
                   {formatOrderDate(order.createdAt)}
                 </p>
 
-                {!storedDiscountAvailable && (
-                  <div className="mb-4 rounded-xl border border-yellow-200 bg-yellow-50 p-3">
-                    <p className="text-sm font-medium text-yellow-800">
-                      O backend não retornou o campo discountApplied.
-                    </p>
-
-                    <p className="mt-1 text-xs text-yellow-700">
-                      O painel está exibindo uma estimativa baseada nos
-                      percentuais atuais dos produtos.
-                    </p>
-                  </div>
-                )}
-
-                {hasDiscountDifference && (
-                  <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 p-3">
-                    <p className="text-sm font-medium text-orange-800">
-                      O desconto salvo no pedido é diferente da estimativa pelos
-                      produtos.
-                    </p>
-
-                    <p className="mt-1 text-xs text-orange-700">
-                      Será utilizado o desconto oficial de{" "}
-                      {formatCurrency(orderDiscount)}. Os percentuais dos
-                      produtos podem ter sido alterados após a compra.
-                    </p>
-                  </div>
-                )}
+                {/* PRODUTOS */}
 
                 <div className="mb-5 grid gap-3 sm:grid-cols-2">
                   {order.items.map((item, index) => {
@@ -505,22 +487,32 @@ export function OrderValidationPage() {
 
                     const itemSubtotal = calculateItemSubtotal(item);
 
-                    const itemEstimatedDiscount =
-                      calculateItemEstimatedDiscount(item);
+                    const itemVisualDiscount =
+                      calculateItemVisualDiscount(item);
+
+                    const itemReferenceAmount =
+                      itemSubtotal + itemVisualDiscount;
 
                     return (
                       <div
                         key={product?.id ?? `${order.id}-${index}`}
                         className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
                       >
+                        {/* IMAGEM */}
+
                         <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-gray-50 p-1">
                           <img
                             src={product?.image ?? DEFAULT_PRODUCT_IMAGE}
                             alt={product?.name ?? "Produto"}
                             className="h-full w-full object-contain"
                             loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.src = DEFAULT_PRODUCT_IMAGE;
+                            }}
                           />
                         </div>
+
+                        {/* DADOS */}
 
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium text-gray-800">
@@ -533,23 +525,30 @@ export function OrderValidationPage() {
                           </p>
 
                           <p className="mt-1 text-xs text-gray-500">
-                            Subtotal: {formatCurrency(itemSubtotal)}
+                            Valor pago: {formatCurrency(itemSubtotal)}
                           </p>
 
                           {discountPercentage > 0 ? (
                             <div className="mt-2">
                               <span className="inline-flex rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">
-                                {discountPercentage}% de desconto
+                                {discountPercentage}% de benefício
                               </span>
 
+                              <p className="mt-1 text-xs text-gray-500">
+                                Valor de referência:{" "}
+                                <span className="line-through">
+                                  {formatCurrency(itemReferenceAmount)}
+                                </span>
+                              </p>
+
                               <p className="mt-1 text-xs text-orange-600">
-                                Economia estimada:{" "}
-                                {formatCurrency(itemEstimatedDiscount)}
+                                Benefício exibido:{" "}
+                                {formatCurrency(itemVisualDiscount)}
                               </p>
                             </div>
                           ) : (
                             <span className="mt-2 inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500">
-                              Sem desconto
+                              Sem benefício
                             </span>
                           )}
                         </div>
@@ -558,30 +557,34 @@ export function OrderValidationPage() {
                   })}
                 </div>
 
+                {/* RESUMO FINANCEIRO */}
+
                 <div className="grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-xl bg-gray-50 p-3">
                     <p className="text-xs font-medium text-gray-500">
-                      Valor dos produtos
+                      Valor de referência
                     </p>
 
                     <p className="mt-1 text-lg font-bold text-gray-800">
-                      {formatCurrency(grossAmount)}
+                      {formatCurrency(referenceAmount)}
+                    </p>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Valor comparativo
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-orange-50 p-3">
                     <p className="text-xs font-medium text-orange-700">
-                      Desconto aplicado
+                      Benefício exibido
                     </p>
 
                     <p className="mt-1 text-lg font-bold text-orange-700">
-                      -{formatCurrency(orderDiscount)}
+                      -{formatCurrency(visualDiscount)}
                     </p>
 
                     <p className="mt-1 text-xs text-orange-600">
-                      {storedDiscountAvailable
-                        ? "Valor salvo no pedido"
-                        : "Valor estimado"}
+                      Calculado pelos percentuais
                     </p>
                   </div>
 
@@ -592,6 +595,10 @@ export function OrderValidationPage() {
 
                     <p className="mt-1 text-lg font-bold text-blue-700">
                       {formatCurrency(paidAmount)}
+                    </p>
+
+                    <p className="mt-1 text-xs text-blue-600">
+                      Valor real do pedido
                     </p>
                   </div>
 
@@ -615,6 +622,8 @@ export function OrderValidationPage() {
                   </div>
                 </div>
 
+                {/* AÇÕES */}
+
                 {order.status === "PENDING" && (
                   <div className="flex flex-col gap-2 pt-4 sm:flex-row">
                     <button
@@ -625,15 +634,15 @@ export function OrderValidationPage() {
                             0,
                             8,
                           )}?\n\n` +
-                            `Valor dos produtos: ${formatCurrency(
-                              grossAmount,
+                            `Valor de referência: ${formatCurrency(
+                              referenceAmount,
                             )}\n` +
-                            `Desconto aplicado: ${formatCurrency(
-                              orderDiscount,
+                            `Benefício exibido: ${formatCurrency(
+                              visualDiscount,
                             )}\n` +
                             `Total pago: ${formatCurrency(paidAmount)}\n` +
                             `Pontos previstos: ${orderPoints}\n\n` +
-                            `O servidor fará o cálculo oficial dos pontos.`,
+                            `O servidor fará o crédito oficial dos pontos.`,
                         );
 
                         if (confirmed) {
@@ -676,6 +685,8 @@ export function OrderValidationPage() {
           })}
         </div>
       )}
+
+      {/* PAGINAÇÃO */}
 
       {orders.length > 0 && (
         <div className="mt-6 text-center">
