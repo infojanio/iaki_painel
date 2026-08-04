@@ -293,21 +293,44 @@ export function RedemptionsList() {
               key={redemption.id}
               className="overflow-hidden rounded-2xl border bg-white shadow-sm"
             >
-              <div className="grid md:grid-cols-[190px_1fr]">
+              <div className="grid md:grid-cols-[280px_1fr]">
                 {/* IMAGEM */}
 
-                <div className="h-52 bg-muted md:h-full md:min-h-[430px]">
+                {/* IMAGEM DO BRINDE */}
+
+                <div className="flex h-56 items-center justify-center bg-slate-50 p-4 md:h-auto md:min-h-[320px]">
                   {redemption.reward?.image ? (
                     <img
                       src={redemption.reward.image}
                       alt={redemption.reward.title ?? "Imagem do brinde"}
-                      className="h-full w-full object-cover"
+                      className="h-full max-h-72 w-full object-contain"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+
+                        const fallback = event.currentTarget
+                          .nextElementSibling as HTMLElement | null;
+
+                        if (fallback) {
+                          fallback.style.display = "flex";
+                        }
+                      }}
                     />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Gift className="h-12 w-12 text-muted-foreground" />
+                  ) : null}
+
+                  <div
+                    className={`h-full min-h-48 w-full items-center justify-center ${
+                      redemption.reward?.image ? "hidden" : "flex"
+                    }`}
+                  >
+                    <div className="text-center">
+                      <Gift className="mx-auto h-12 w-12 text-muted-foreground" />
+
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Imagem não disponível
+                      </p>
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* CONTEÚDO */}
