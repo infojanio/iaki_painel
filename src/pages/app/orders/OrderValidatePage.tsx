@@ -26,8 +26,19 @@ type Order = {
   id: string;
   user_name: string;
   createdAt: string;
+
+  /*
+   * Valor bruto dos produtos,
+   * antes do desconto.
+   */
   totalAmount: number | string;
+
+  /*
+   * Desconto oficial registrado
+   * no momento do pedido.
+   */
   discountApplied?: number | string | null;
+
   status: OrderStatus;
   items: OrderItem[];
   qrCodeUrl?: string | null;
@@ -52,32 +63,60 @@ const STATUS_OPTIONS: Array<{
   },
   {
     value: "EXPIRED",
-    label: "Cancelado",
+    label: "Expirado",
   },
 ];
 
-function formatCurrency(value?: number | string | null) {
+const DEFAULT_PRODUCT_IMAGE =
+  "https://via.placeholder.com/160x160.png?text=Produto";
+
+function toSafeNumber(value?: number | string | null) {
   const numericValue = Number(value ?? 0);
 
-  return numericValue.toLocaleString("pt-BR", {
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function formatCurrency(value?: number | string | null) {
+  return toSafeNumber(value).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
 }
 
+function formatOrderDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Data não informada";
+  }
+
+  return format(date, "dd/MM/yyyy 'às' HH:mm", {
+    locale: ptBR,
+  });
+}
+
 function getProductDiscountPercentage(product: Product | null) {
-  return Math.max(Number(product?.cashbackPercentage ?? 0), 0);
+  const percentage = toSafeNumber(product?.cashbackPercentage);
+
+  return Math.min(Math.max(percentage, 0), 100);
 }
 
 function calculateItemSubtotal(item: OrderItem) {
-  const price = Number(item.product?.price ?? 0);
+  const price = toSafeNumber(item.product?.price);
 
-  const quantity = Number(item.quantity ?? 0);
+  const quantity = Math.max(toSafeNumber(item.quantity), 0);
 
   return price * quantity;
 }
 
-function calculateItemDiscount(item: OrderItem) {
+/*
+ * Este desconto por item é apenas visual.
+ *
+ * Ele utiliza o percentual atual do produto,
+ * que pode ter mudado depois da criação
+ * do pedido.
+ */
+function calculateItemEstimatedDiscount(item: OrderItem) {
   const subtotal = calculateItemSubtotal(item);
 
   const percentage = getProductDiscountPercentage(item.product);
@@ -85,25 +124,63 @@ function calculateItemDiscount(item: OrderItem) {
   return subtotal * (percentage / 100);
 }
 
-function calculateOrderDiscount(order: Order) {
+function calculateEstimatedOrderDiscount(order: Order) {
   return order.items.reduce(
-    (totalDiscount, item) => totalDiscount + calculateItemDiscount(item),
+    (totalDiscount, item) =>
+      totalDiscount + calculateItemEstimatedDiscount(item),
     0,
   );
 }
 
+function calculateGrossAmount(order: Order) {
+  return Math.max(toSafeNumber(order.totalAmount), 0);
+}
+
+function hasStoredDiscount(order: Order) {
+  return order.discountApplied !== undefined && order.discountApplied !== null;
+}
+
+/*
+ * Desconto oficial:
+ * utiliza discountApplied salvo
+ * no pedido.
+ *
+ * O cálculo pelos itens fica apenas
+ * como fallback quando a API ainda
+ * não estiver enviando o campo.
+ */
+function calculateOrderDiscount(order: Order) {
+  const grossAmount = calculateGrossAmount(order);
+
+  const discount = hasStoredDiscount(order)
+    ? toSafeNumber(order.discountApplied)
+    : calculateEstimatedOrderDiscount(order);
+
+  return Math.min(Math.max(discount, 0), grossAmount);
+}
+
+/*
+ * Valor efetivamente pago:
+ *
+ * total bruto - desconto aplicado.
+ */
 function calculatePaidAmount(order: Order) {
-  const totalAmount = Number(order.totalAmount ?? 0);
+  const grossAmount = calculateGrossAmount(order);
 
   const discountApplied = calculateOrderDiscount(order);
 
-  return Math.max(totalAmount + discountApplied, 0);
+  return Math.max(grossAmount - discountApplied, 0);
 }
 
+/*
+ * Regra:
+ * 1 ponto a cada R$ 10
+ * efetivamente pagos.
+ */
 function calculateOrderPoints(order: Order) {
-  const valorPago = calculatePaidAmount(order);
+  const paidAmount = calculatePaidAmount(order);
 
-  return Math.floor(valorPago / 10);
+  return Math.floor(paidAmount / 10);
 }
 
 function getStatusLabel(status: OrderStatus) {
@@ -182,7 +259,9 @@ export function OrderValidationPage() {
       } catch (error: any) {
         console.error("[OrderValidationPage] Erro ao carregar pedidos:", {
           status: error?.response?.status,
+
           data: error?.response?.data,
+
           message: error?.message,
         });
 
@@ -190,7 +269,7 @@ export function OrderValidationPage() {
           setOrders([]);
         }
 
-        alert(
+        window.alert(
           error?.response?.data?.message ??
             "Não foi possível carregar os pedidos.",
         );
@@ -217,8 +296,13 @@ export function OrderValidationPage() {
 
       await fetchOrders(1, true);
 
-      alert(
-        data?.message ?? "Pedido validado e pontos acumulados com sucesso!",
+      const pointsMessage =
+        data?.pointsEarned !== undefined
+          ? `\n\nPontos creditados pelo servidor: ${Number(data.pointsEarned)}`
+          : "";
+
+      window.alert(
+        `${data?.message ?? "Pedido validado com sucesso!"}${pointsMessage}`,
       );
     },
 
@@ -226,7 +310,7 @@ export function OrderValidationPage() {
       const message =
         error?.response?.data?.message ?? "Erro ao validar o pedido.";
 
-      alert(message);
+      window.alert(message);
     },
   });
 
@@ -246,14 +330,14 @@ export function OrderValidationPage() {
 
       await fetchOrders(1, true);
 
-      alert(data?.message ?? "Pedido cancelado com sucesso.");
+      window.alert(data?.message ?? "Pedido cancelado com sucesso.");
     },
 
     onError: (error: any) => {
       const message =
         error?.response?.data?.message ?? "Erro ao cancelar o pedido.";
 
-      alert(message);
+      window.alert(message);
     },
   });
 
@@ -288,7 +372,7 @@ export function OrderValidationPage() {
         </h1>
 
         <p className="mt-1 text-sm text-gray-500">
-          Confira os produtos e pontos antes de validar o pedido.
+          Confira os produtos, descontos e pontos antes de validar o pedido.
         </p>
       </div>
 
@@ -333,11 +417,21 @@ export function OrderValidationPage() {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => {
+            const grossAmount = calculateGrossAmount(order);
+
+            const estimatedDiscount = calculateEstimatedOrderDiscount(order);
+
             const orderDiscount = calculateOrderDiscount(order);
 
             const paidAmount = calculatePaidAmount(order);
 
             const orderPoints = calculateOrderPoints(order);
+
+            const storedDiscountAvailable = hasStoredDiscount(order);
+
+            const hasDiscountDifference =
+              storedDiscountAvailable &&
+              Math.abs(estimatedDiscount - orderDiscount) > 0.01;
 
             const isValidating =
               validateOrder.isPending && validateOrder.variables === order.id;
@@ -371,10 +465,36 @@ export function OrderValidationPage() {
                 </div>
 
                 <p className="mb-4 text-sm text-gray-500">
-                  {format(new Date(order.createdAt), "dd/MM/yyyy 'às' HH:mm", {
-                    locale: ptBR,
-                  })}
+                  {formatOrderDate(order.createdAt)}
                 </p>
+
+                {!storedDiscountAvailable && (
+                  <div className="mb-4 rounded-xl border border-yellow-200 bg-yellow-50 p-3">
+                    <p className="text-sm font-medium text-yellow-800">
+                      O backend não retornou o campo discountApplied.
+                    </p>
+
+                    <p className="mt-1 text-xs text-yellow-700">
+                      O painel está exibindo uma estimativa baseada nos
+                      percentuais atuais dos produtos.
+                    </p>
+                  </div>
+                )}
+
+                {hasDiscountDifference && (
+                  <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 p-3">
+                    <p className="text-sm font-medium text-orange-800">
+                      O desconto salvo no pedido é diferente da estimativa pelos
+                      produtos.
+                    </p>
+
+                    <p className="mt-1 text-xs text-orange-700">
+                      Será utilizado o desconto oficial de{" "}
+                      {formatCurrency(orderDiscount)}. Os percentuais dos
+                      produtos podem ter sido alterados após a compra.
+                    </p>
+                  </div>
+                )}
 
                 <div className="mb-5 grid gap-3 sm:grid-cols-2">
                   {order.items.map((item, index) => {
@@ -385,20 +505,22 @@ export function OrderValidationPage() {
 
                     const itemSubtotal = calculateItemSubtotal(item);
 
-                    const itemDiscount = calculateItemDiscount(item);
+                    const itemEstimatedDiscount =
+                      calculateItemEstimatedDiscount(item);
 
                     return (
                       <div
                         key={product?.id ?? `${order.id}-${index}`}
                         className="flex items-start gap-3 rounded-xl border border-gray-100 p-3"
                       >
-                        <img
-                          src={
-                            product?.image ?? "https://via.placeholder.com/80"
-                          }
-                          alt={product?.name ?? "Produto"}
-                          className="h-20 w-20 shrink-0 rounded-lg border object-cover"
-                        />
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-gray-50 p-1">
+                          <img
+                            src={product?.image ?? DEFAULT_PRODUCT_IMAGE}
+                            alt={product?.name ?? "Produto"}
+                            className="h-full w-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
 
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium text-gray-800">
@@ -406,7 +528,8 @@ export function OrderValidationPage() {
                           </p>
 
                           <p className="mt-1 text-sm text-gray-600">
-                            {item.quantity}x {formatCurrency(product?.price)}
+                            {toSafeNumber(item.quantity)}x{" "}
+                            {formatCurrency(product?.price)}
                           </p>
 
                           <p className="mt-1 text-xs text-gray-500">
@@ -420,7 +543,8 @@ export function OrderValidationPage() {
                               </span>
 
                               <p className="mt-1 text-xs text-orange-600">
-                                Economia: {formatCurrency(itemDiscount)}
+                                Economia estimada:{" "}
+                                {formatCurrency(itemEstimatedDiscount)}
                               </p>
                             </div>
                           ) : (
@@ -437,31 +561,37 @@ export function OrderValidationPage() {
                 <div className="grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-xl bg-gray-50 p-3">
                     <p className="text-xs font-medium text-gray-500">
-                      Valor do produto
+                      Valor dos produtos
                     </p>
 
-                    <p className="mt-1 text-lg font-bold text-blue-700">
-                      {formatCurrency(paidAmount)}
+                    <p className="mt-1 text-lg font-bold text-gray-800">
+                      {formatCurrency(grossAmount)}
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-orange-50 p-3">
                     <p className="text-xs font-medium text-orange-700">
-                      Desconto calculado
+                      Desconto aplicado
                     </p>
 
                     <p className="mt-1 text-lg font-bold text-orange-700">
-                      {formatCurrency(orderDiscount)}
+                      -{formatCurrency(orderDiscount)}
+                    </p>
+
+                    <p className="mt-1 text-xs text-orange-600">
+                      {storedDiscountAvailable
+                        ? "Valor salvo no pedido"
+                        : "Valor estimado"}
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-blue-50 p-3">
                     <p className="text-xs font-medium text-blue-700">
-                      Total a pagar
+                      Total pago
                     </p>
 
-                    <p className="mt-1 text-lg font-bold text-gray-800">
-                      {formatCurrency(order.totalAmount)}
+                    <p className="mt-1 text-lg font-bold text-blue-700">
+                      {formatCurrency(paidAmount)}
                     </p>
                   </div>
 
@@ -495,9 +625,15 @@ export function OrderValidationPage() {
                             0,
                             8,
                           )}?\n\n` +
-                            `Valor pago: ${formatCurrency(order.totalAmount)}\n` +
-                            `Desconto: ${formatCurrency(orderDiscount)}\n` +
-                            `Pontos acumulados: ${orderPoints}`,
+                            `Valor dos produtos: ${formatCurrency(
+                              grossAmount,
+                            )}\n` +
+                            `Desconto aplicado: ${formatCurrency(
+                              orderDiscount,
+                            )}\n` +
+                            `Total pago: ${formatCurrency(paidAmount)}\n` +
+                            `Pontos previstos: ${orderPoints}\n\n` +
+                            `O servidor fará o cálculo oficial dos pontos.`,
                         );
 
                         if (confirmed) {
