@@ -15,6 +15,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  FolderDownIcon,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -243,9 +244,9 @@ export function Sidebar() {
 
             <SidebarSection title="Configurações">
               <SidebarLink
-                to="/settings"
-                icon={Settings}
-                label="Configurações"
+                to="/reports"
+                icon={FolderDownIcon}
+                label="Relatórios"
               />
             </SidebarSection>
           </>
