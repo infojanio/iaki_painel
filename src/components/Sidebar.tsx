@@ -12,7 +12,6 @@ import {
   Gift,
   BadgePercent,
   History,
-  Settings,
   LogOut,
   ChevronRight,
   FolderDownIcon,
