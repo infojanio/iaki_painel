@@ -42,3 +42,9 @@ export async function listUsers({
 
   return response.data;
 }
+
+export async function anonymizeUser(userId: string) {
+  const response = await api.patch(`/users/${userId}/anonymize`);
+
+  return response.data;
+}

@@ -2,16 +2,32 @@ import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { Loader2, Search, Users, Phone, Link2, Store } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Users,
+  Phone,
+  Link2,
+  Store,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
 
 import { Dialog } from "@headlessui/react";
 
-import { listUsers } from "@/services/users";
+import { anonymizeUser, listUsers } from "@/services/users";
+
 import { api } from "@/lib/axios";
 
 type StoreItem = {
   id: string;
   name: string;
+};
+
+type DeleteUserData = {
+  id: string;
+  name: string;
+  email: string;
 };
 
 export function CustomersListPage() {
@@ -20,15 +36,23 @@ export function CustomersListPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
 
+  /*
+   * Modal de vínculo com loja
+   */
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const [selectedStoreId, setSelectedStoreId] = useState("");
+
+  /*
+   * Modal de exclusão
+   */
+  const [userToDelete, setUserToDelete] = useState<DeleteUserData | null>(null);
 
   /* ======================================================
      USERS
   ====================================================== */
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ["customers", page, query],
 
     queryFn: () =>
@@ -55,7 +79,7 @@ export function CustomersListPage() {
   });
 
   /* ======================================================
-     MUTATION
+     ATTACH STORE
   ====================================================== */
 
   const attachStoreMutation = useMutation({
@@ -71,8 +95,8 @@ export function CustomersListPage() {
       });
     },
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: ["customers"],
       });
 
@@ -82,23 +106,100 @@ export function CustomersListPage() {
       alert("Usuário vinculado à loja com sucesso.");
     },
 
-    onError: () => {
-      alert("Erro ao vincular loja.");
+    onError: (error: any) => {
+      console.error(
+        "[CustomersListPage] Erro ao vincular loja:",
+        error?.response?.data ?? error,
+      );
+
+      alert(error?.response?.data?.message ?? "Erro ao vincular loja.");
     },
   });
+
+  /* ======================================================
+     DELETE / ANONYMIZE USER
+  ====================================================== */
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => anonymizeUser(userId),
+
+    onSuccess: async (response) => {
+      /*
+       * Fecha primeiro o modal.
+       */
+      setUserToDelete(null);
+
+      /*
+       * Atualiza todas as queries
+       * iniciadas por "customers".
+       */
+      await queryClient.invalidateQueries({
+        queryKey: ["customers"],
+      });
+
+      alert(response?.message ?? "Conta do cliente excluída com sucesso.");
+    },
+
+    onError: (error: any) => {
+      console.error(
+        "[CustomersListPage] Erro ao excluir cliente:",
+        error?.response?.data ?? error,
+      );
+
+      alert(
+        error?.response?.data?.message ??
+          "Não foi possível excluir a conta do cliente.",
+      );
+    },
+  });
+
+  /* ======================================================
+     HELPERS
+  ====================================================== */
+
+  function isDeletedUser(email: string) {
+    return (
+      email.startsWith("deleted+") && email.endsWith("@deleted.iaki.local")
+    );
+  }
+
+  function openDeleteModal(user: DeleteUserData) {
+    setUserToDelete(user);
+  }
+
+  function closeDeleteModal() {
+    if (deleteUserMutation.isPending) {
+      return;
+    }
+
+    setUserToDelete(null);
+  }
+
+  function handleDeleteUser() {
+    if (!userToDelete) {
+      return;
+    }
+
+    deleteUserMutation.mutate(userToDelete.id);
+  }
 
   /* ======================================================
      DATA
   ====================================================== */
 
   const users = data?.users ?? [];
+
   const meta = data?.meta;
 
   const totalCustomers = meta?.totalCount ?? 0;
 
-  const customersWithPhone = users.filter((user) => !!user.phone).length;
+  const customersWithPhone = users.filter(
+    (user) => !!user.phone && !isDeletedUser(user.email),
+  ).length;
 
-  const customersAdmins = users.filter((user) => !!user.storeId).length;
+  const customersAdmins = users.filter(
+    (user) => !!user.storeId && !isDeletedUser(user.email),
+  ).length;
 
   /* ======================================================
      LOADING
@@ -106,8 +207,21 @@ export function CustomersListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-10">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div
+        className="
+          flex
+          items-center
+          justify-center
+          p-10
+        "
+      >
+        <Loader2
+          className="
+            h-8
+            w-8
+            animate-spin
+          "
+        />
       </div>
     );
   }
@@ -130,7 +244,14 @@ export function CustomersListPage() {
 
       {/* KPIS */}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div
+        className="
+          grid
+          grid-cols-1
+          gap-4
+          md:grid-cols-3
+        "
+      >
         <KpiCard
           title="Clientes"
           value={totalCustomers}
@@ -140,13 +261,29 @@ export function CustomersListPage() {
         <KpiCard
           title="Com telefone"
           value={customersWithPhone}
-          icon={<Phone className="h-5 w-5 text-green-600" />}
+          icon={
+            <Phone
+              className="
+                h-5
+                w-5
+                text-green-600
+              "
+            />
+          }
         />
 
         <KpiCard
           title="Administradores"
           value={customersAdmins}
-          icon={<Store className="h-5 w-5 text-blue-600" />}
+          icon={
+            <Store
+              className="
+                h-5
+                w-5
+                text-blue-600
+              "
+            />
+          }
         />
       </div>
 
@@ -154,25 +291,71 @@ export function CustomersListPage() {
 
       <div className="flex flex-wrap gap-4">
         <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Search
+            className="
+              absolute
+              left-3
+              top-3
+              h-4
+              w-4
+              text-gray-400
+            "
+          />
 
           <input
             placeholder="Buscar usuário..."
-            className="border rounded-lg pl-10 pr-4 py-2 text-sm w-80"
+            className="
+              w-80
+              rounded-lg
+              border
+              py-2
+              pl-10
+              pr-4
+              text-sm
+            "
             value={query}
             onChange={(e) => {
               setPage(1);
+
               setQuery(e.target.value);
             }}
           />
+
+          {isFetching && (
+            <Loader2
+              className="
+                absolute
+                right-3
+                top-3
+                h-4
+                w-4
+                animate-spin
+                text-gray-400
+              "
+            />
+          )}
         </div>
       </div>
 
       {/* TABELA */}
 
-      <div className="overflow-auto rounded-2xl border bg-white shadow-sm">
+      <div
+        className="
+          overflow-auto
+          rounded-2xl
+          border
+          bg-white
+          shadow-sm
+        "
+      >
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600 border-b">
+          <thead
+            className="
+              border-b
+              bg-gray-50
+              text-gray-600
+            "
+          >
             <tr>
               <th className="px-4 py-4 text-left">Usuário</th>
 
@@ -184,60 +367,156 @@ export function CustomersListPage() {
 
               <th className="px-4 py-4 text-left">Cadastro</th>
 
-              <th className="px-4 py-4 text-left">Ações</th>
+              <th className="px-4 py-4 text-center">Ações</th>
             </tr>
           </thead>
 
           <tbody className="divide-y">
             {users.map((user) => {
+              const deleted = isDeletedUser(user.email);
+
               return (
                 <tr
                   key={user.id}
-                  className="hover:bg-gray-50 transition-colors"
+                  className={`
+                    transition-colors
+
+                    ${deleted ? "bg-gray-50 opacity-70" : "hover:bg-gray-50"}
+                  `}
                 >
                   {/* USER */}
 
                   <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      {user.avatar ? (
+                    <div
+                      className="
+                        flex
+                        items-center
+                        gap-3
+                      "
+                    >
+                      {user.avatar && !deleted ? (
                         <img
                           src={user.avatar}
                           alt={user.name}
-                          className="h-10 w-10 rounded-full object-cover border"
+                          className="
+                            h-10
+                            w-10
+                            rounded-full
+                            border
+                            object-cover
+                          "
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                          {user.name.charAt(0)}
+                        <div
+                          className="
+                            flex
+                            h-10
+                            w-10
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-gray-200
+                            text-xs
+                            font-bold
+                          "
+                        >
+                          {deleted ? "X" : user.name.charAt(0)}
                         </div>
                       )}
 
                       <div className="flex flex-col">
                         <strong>{user.name}</strong>
 
-                        {user.storeId && (
-                          <span className="text-xs text-blue-600">ADMIN</span>
-                        )}
+                        {deleted ? (
+                          <span
+                            className="
+                              text-xs
+                              font-medium
+                              text-gray-500
+                            "
+                          >
+                            CONTA EXCLUÍDA
+                          </span>
+                        ) : user.storeId ? (
+                          <span
+                            className="
+                              text-xs
+                              text-blue-600
+                            "
+                          >
+                            ADMIN
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </td>
 
                   {/* EMAIL */}
 
-                  <td className="px-4 py-4">{user.email}</td>
+                  <td className="px-4 py-4">
+                    {deleted ? (
+                      <span
+                        className="
+                          text-xs
+                          text-gray-400
+                        "
+                      >
+                        Dados removidos
+                      </span>
+                    ) : (
+                      user.email
+                    )}
+                  </td>
 
                   {/* PHONE */}
 
-                  <td className="px-4 py-4">{user.phone || "-"}</td>
+                  <td className="px-4 py-4">
+                    {deleted ? "-" : user.phone || "-"}
+                  </td>
 
                   {/* ROLE */}
 
                   <td className="px-4 py-4">
-                    {user.storeId ? (
-                      <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                    {deleted ? (
+                      <span
+                        className="
+                          rounded-full
+                          bg-gray-200
+                          px-3
+                          py-1
+                          text-xs
+                          font-semibold
+                          text-gray-600
+                        "
+                      >
+                        EXCLUÍDO
+                      </span>
+                    ) : user.storeId ? (
+                      <span
+                        className="
+                          rounded-full
+                          bg-blue-100
+                          px-3
+                          py-1
+                          text-xs
+                          font-semibold
+                          text-blue-700
+                        "
+                      >
                         ADMIN
                       </span>
                     ) : (
-                      <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold">
+                      <span
+                        className="
+                          rounded-full
+                          bg-gray-100
+                          px-3
+                          py-1
+                          text-xs
+                          font-semibold
+                          text-gray-700
+                        "
+                      >
                         CLIENTE
                       </span>
                     )}
@@ -252,25 +531,126 @@ export function CustomersListPage() {
                   {/* ACTIONS */}
 
                   <td className="px-4 py-4">
-                    {!user.storeId ? (
-                      <button
-                        onClick={() => {
-                          setSelectedUserId(user.id);
-                        }}
-                        className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
-                      >
-                        <Link2 className="h-4 w-4" />
-                        Vincular Loja
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-400">
-                        Já vinculado
-                      </span>
-                    )}
+                    <div
+                      className="
+                        flex
+                        items-center
+                        justify-center
+                        gap-3
+                      "
+                    >
+                      {deleted ? (
+                        <span
+                          className="
+                            text-xs
+                            text-gray-400
+                          "
+                        >
+                          Sem ações
+                        </span>
+                      ) : (
+                        <>
+                          {/* VINCULAR LOJA */}
+
+                          {!user.storeId && (
+                            <button
+                              type="button"
+                              title="Vincular loja"
+                              onClick={() => {
+                                setSelectedUserId(user.id);
+                              }}
+                              className="
+                                inline-flex
+                                h-9
+                                w-9
+                                items-center
+                                justify-center
+                                rounded-lg
+                                text-blue-600
+                                transition-colors
+
+                                hover:bg-blue-50
+                                hover:text-blue-800
+                              "
+                            >
+                              <Link2
+                                className="
+                                  h-4
+                                  w-4
+                                "
+                              />
+                            </button>
+                          )}
+
+                          {/* EXCLUIR CONTA */}
+
+                          {!user.storeId && (
+                            <button
+                              type="button"
+                              title="Excluir conta"
+                              onClick={() =>
+                                openDeleteModal({
+                                  id: user.id,
+                                  name: user.name,
+                                  email: user.email,
+                                })
+                              }
+                              className="
+                                inline-flex
+                                h-9
+                                w-9
+                                items-center
+                                justify-center
+                                rounded-lg
+                                text-red-600
+                                transition-colors
+
+                                hover:bg-red-50
+                                hover:text-red-800
+                              "
+                            >
+                              <Trash2
+                                className="
+                                  h-4
+                                  w-4
+                                "
+                              />
+                            </button>
+                          )}
+
+                          {user.storeId && (
+                            <span
+                              className="
+                                text-xs
+                                text-gray-400
+                              "
+                            >
+                              Administrador
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
             })}
+
+            {users.length === 0 && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="
+                    px-4
+                    py-10
+                    text-center
+                    text-gray-500
+                  "
+                >
+                  Nenhum usuário encontrado.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -278,7 +658,13 @@ export function CustomersListPage() {
       {/* PAGINAÇÃO */}
 
       {meta && (
-        <div className="flex items-center justify-between">
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+          "
+        >
           <p className="text-sm text-gray-500">
             Página {meta.page} de {meta.totalPages}
           </p>
@@ -287,7 +673,15 @@ export function CustomersListPage() {
             <button
               disabled={page <= 1}
               onClick={() => setPage((prev) => prev - 1)}
-              className="border rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              className="
+                rounded-lg
+                border
+                px-4
+                py-2
+                text-sm
+
+                disabled:opacity-50
+              "
             >
               Anterior
             </button>
@@ -295,7 +689,15 @@ export function CustomersListPage() {
             <button
               disabled={page >= meta.totalPages}
               onClick={() => setPage((prev) => prev + 1)}
-              className="border rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+              className="
+                rounded-lg
+                border
+                px-4
+                py-2
+                text-sm
+
+                disabled:opacity-50
+              "
             >
               Próxima
             </button>
@@ -303,26 +705,71 @@ export function CustomersListPage() {
         </div>
       )}
 
-      {/* MODAL */}
+      {/* ==================================================
+          MODAL VINCULAR LOJA
+      ================================================== */}
 
       <Dialog
         open={!!selectedUserId}
         onClose={() => {
+          if (attachStoreMutation.isPending) {
+            return;
+          }
+
           setSelectedUserId(null);
+          setSelectedStoreId("");
         }}
       >
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-[420px] rounded-2xl p-6 shadow-xl space-y-4">
-            <h2 className="text-xl font-bold">Vincular Loja</h2>
+        <div
+          className="
+            fixed
+            inset-0
+            z-50
+            flex
+            items-center
+            justify-center
+            bg-black/40
+            p-4
+          "
+        >
+          <Dialog.Panel
+            className="
+              w-full
+              max-w-[420px]
+              space-y-4
+              rounded-2xl
+              bg-white
+              p-6
+              shadow-xl
+            "
+          >
+            <Dialog.Title
+              className="
+                text-xl
+                font-bold
+              "
+            >
+              Vincular Loja
+            </Dialog.Title>
 
-            <p className="text-sm text-gray-500">
+            <p
+              className="
+                text-sm
+                text-gray-500
+              "
+            >
               O usuário será promovido para ADMIN.
             </p>
 
             <select
               value={selectedStoreId}
               onChange={(e) => setSelectedStoreId(e.target.value)}
-              className="w-full border rounded-lg p-3"
+              className="
+                w-full
+                rounded-lg
+                border
+                p-3
+              "
             >
               <option value="">Selecione uma loja</option>
 
@@ -333,10 +780,26 @@ export function CustomersListPage() {
               ))}
             </select>
 
-            <div className="flex justify-end gap-2">
+            <div
+              className="
+                flex
+                justify-end
+                gap-2
+              "
+            >
               <button
-                onClick={() => setSelectedUserId(null)}
-                className="px-4 py-2 rounded-lg border"
+                disabled={attachStoreMutation.isPending}
+                onClick={() => {
+                  setSelectedUserId(null);
+                  setSelectedStoreId("");
+                }}
+                className="
+                  rounded-lg
+                  border
+                  px-4
+                  py-2
+                  disabled:opacity-50
+                "
               >
                 Cancelar
               </button>
@@ -346,15 +809,242 @@ export function CustomersListPage() {
                 onClick={() => {
                   attachStoreMutation.mutate({
                     userId: selectedUserId!,
+
                     storeId: selectedStoreId,
                   });
                 }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-lg
+                  bg-blue-600
+                  px-4
+                  py-2
+                  text-white
+
+                  hover:bg-blue-700
+
+                  disabled:opacity-50
+                "
               >
+                {attachStoreMutation.isPending && (
+                  <Loader2
+                    className="
+                      h-4
+                      w-4
+                      animate-spin
+                    "
+                  />
+                )}
+
                 {attachStoreMutation.isPending ? "Salvando..." : "Salvar"}
               </button>
             </div>
-          </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* ==================================================
+          MODAL EXCLUIR CONTA
+      ================================================== */}
+
+      <Dialog open={!!userToDelete} onClose={closeDeleteModal}>
+        <div
+          className="
+            fixed
+            inset-0
+            z-50
+            flex
+            items-center
+            justify-center
+            bg-black/40
+            p-4
+          "
+        >
+          <Dialog.Panel
+            className="
+              w-full
+              max-w-[460px]
+              rounded-2xl
+              bg-white
+              p-6
+              shadow-xl
+            "
+          >
+            <div
+              className="
+                flex
+                h-12
+                w-12
+                items-center
+                justify-center
+                rounded-full
+                bg-red-100
+              "
+            >
+              <AlertTriangle
+                className="
+                  h-6
+                  w-6
+                  text-red-600
+                "
+              />
+            </div>
+
+            <Dialog.Title
+              className="
+                mt-4
+                text-xl
+                font-bold
+                text-gray-900
+              "
+            >
+              Excluir conta do cliente?
+            </Dialog.Title>
+
+            <Dialog.Description
+              className="
+                mt-2
+                text-sm
+                leading-6
+                text-gray-600
+              "
+            >
+              Esta ação removerá os dados pessoais do cliente e não poderá ser
+              desfeita.
+            </Dialog.Description>
+
+            {userToDelete && (
+              <div
+                className="
+                  mt-4
+                  rounded-xl
+                  border
+                  bg-gray-50
+                  p-4
+                "
+              >
+                <p
+                  className="
+                    text-sm
+                    font-semibold
+                    text-gray-900
+                  "
+                >
+                  {userToDelete.name}
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-sm
+                    text-gray-500
+                  "
+                >
+                  {userToDelete.email}
+                </p>
+              </div>
+            )}
+
+            <div
+              className="
+                mt-4
+                rounded-xl
+                border
+                border-red-200
+                bg-red-50
+                p-4
+              "
+            >
+              <p
+                className="
+                  text-sm
+                  leading-5
+                  text-red-700
+                "
+              >
+                Os dados pessoais serão anonimizados. Os registros históricos
+                necessários para pedidos, pontos e auditoria permanecerão
+                vinculados ao ID técnico do usuário.
+              </p>
+            </div>
+
+            <div
+              className="
+                mt-6
+                flex
+                justify-end
+                gap-3
+              "
+            >
+              <button
+                type="button"
+                disabled={deleteUserMutation.isPending}
+                onClick={closeDeleteModal}
+                className="
+                  rounded-lg
+                  border
+                  px-4
+                  py-2
+                  text-sm
+                  font-medium
+
+                  hover:bg-gray-50
+
+                  disabled:opacity-50
+                "
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={deleteUserMutation.isPending}
+                onClick={handleDeleteUser}
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-lg
+                  bg-red-600
+                  px-4
+                  py-2
+                  text-sm
+                  font-semibold
+                  text-white
+
+                  hover:bg-red-700
+
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                "
+              >
+                {deleteUserMutation.isPending ? (
+                  <>
+                    <Loader2
+                      className="
+                        h-4
+                        w-4
+                        animate-spin
+                      "
+                    />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2
+                      className="
+                        h-4
+                        w-4
+                      "
+                    />
+                    Excluir conta
+                  </>
+                )}
+              </button>
+            </div>
+          </Dialog.Panel>
         </div>
       </Dialog>
     </div>
@@ -375,10 +1065,31 @@ function KpiCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div
+      className="
+        rounded-2xl
+        border
+        bg-white
+        p-5
+        shadow-sm
+      "
+    >
+      <div
+        className="
+          flex
+          items-center
+          justify-between
+        "
+      >
         <div>
-          <p className="text-sm text-gray-500">{title}</p>
+          <p
+            className="
+              text-sm
+              text-gray-500
+            "
+          >
+            {title}
+          </p>
 
           <h3 className="text-2xl font-bold">{value}</h3>
         </div>
