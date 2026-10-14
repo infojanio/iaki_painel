@@ -10,7 +10,7 @@ export function TopProductsTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top 5 produtos mais vendidos</CardTitle>
+        <CardTitle>Top 10 produtos mais vendidos</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-auto">
