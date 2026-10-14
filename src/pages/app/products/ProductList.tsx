@@ -129,11 +129,12 @@ export function ProductList() {
               key={product.id}
               className="bg-white border rounded-xl shadow-sm overflow-hidden hover:shadow-md transition"
             >
-              <div className="h-40 bg-gray-100 flex items-center justify-center">
+              <div className="h-40 bg-gray-100 flex items-center justify-center p-3 overflow-hidden">
                 {product.image ? (
                   <img
                     src={product.image}
-                    className="h-full w-full object-cover"
+                    alt={product.name || "Imagem do produto"}
+                    className="max-h-36 max-w-[85%] w-auto h-auto object-contain"
                   />
                 ) : (
                   <span className="text-gray-400 text-sm">Sem imagem</span>
