@@ -27,6 +27,7 @@ export interface DashboardMetrics {
   topProducts: {
     id: string;
     name: string;
+    store: string;
     totalSold: number;
   }[];
 
