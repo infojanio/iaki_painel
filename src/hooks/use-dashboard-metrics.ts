@@ -35,6 +35,7 @@ export interface DashboardMetrics {
     id: string;
     name: string;
     email: string;
+    totalOrders: number;
     totalPoints: number;
     totalRedemptions: number;
   }[];

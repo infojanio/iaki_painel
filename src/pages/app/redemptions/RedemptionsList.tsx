@@ -298,13 +298,14 @@ export function RedemptionsList() {
 
                 {/* IMAGEM DO BRINDE */}
 
-                <div className="flex h-56 items-center justify-center bg-slate-50 p-4 md:h-auto md:min-h-[320px]">
+                <div className="flex h-52 w-full items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                  {" "}
                   {redemption.reward?.image ? (
                     <img
                       src={redemption.reward.image}
                       alt={redemption.reward.title ?? "Imagem do brinde"}
-                      className="h-full max-h-72 w-full object-contain"
                       loading="lazy"
+                      className="h-full w-full object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
                       onError={(event) => {
                         event.currentTarget.style.display = "none";
 
@@ -317,7 +318,6 @@ export function RedemptionsList() {
                       }}
                     />
                   ) : null}
-
                   <div
                     className={`h-full min-h-48 w-full items-center justify-center ${
                       redemption.reward?.image ? "hidden" : "flex"

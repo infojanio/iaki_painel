@@ -1,6 +1,5 @@
-// src/pages/app/dashboard/tables/TopUsersTable.tsx
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { useDashboardMetrics } from "@/hooks/use-dashboard-metrics";
 
 export function TopUsersTable() {
@@ -9,27 +8,32 @@ export function TopUsersTable() {
   const users = data?.topUsers ?? [];
 
   return (
-    <Card>
+    <Card className="overflow-hidden rounded-xl shadow-sm">
       <CardHeader>
-        <CardTitle>🏆 Top 5 clientes mais engajados</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          🏆 Top 5 clientes mais engajados
+        </CardTitle>
 
         <p className="text-sm text-muted-foreground">
-          Clientes com maior quantidade de brindes resgatados.
+          Clientes com mais brindes resgatados, seus pedidos validados e saldo
+          de pontos.
         </p>
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="overflow-auto">
+        <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-muted">
+            <thead className="bg-muted/40">
+              <tr className="border-b">
                 <th className="px-4 py-3 text-left">Cliente</th>
 
                 <th className="px-4 py-3 text-left">E-mail</th>
 
+                <th className="px-4 py-3 text-center">Pedidos</th>
+
                 <th className="px-4 py-3 text-center">Resgates</th>
 
-                <th className="px-4 py-3 text-right">Pontos</th>
+                <th className="px-4 py-3 text-right">Saldo de pontos</th>
               </tr>
             </thead>
 
@@ -37,45 +41,59 @@ export function TopUsersTable() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={4}
-                    className="p-4 text-center text-muted-foreground"
+                    colSpan={5}
+                    className="p-6 text-center text-muted-foreground"
                   >
-                    Carregando...
+                    Carregando clientes...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
-                    className="p-4 text-center text-muted-foreground"
+                    colSpan={5}
+                    className="p-6 text-center text-muted-foreground"
                   >
-                    Nenhum dado encontrado.
+                    Nenhum cliente encontrado.
                   </td>
                 </tr>
               ) : (
                 users.map((user, index) => (
                   <tr
                     key={user.id}
-                    className="border-b border-muted hover:bg-muted/30 transition-colors"
+                    className="border-b transition-colors hover:bg-muted/30"
                   >
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
                           #{index + 1}
                         </span>
 
-                        {user.name}
+                        <span className="font-medium">{user.name}</span>
                       </div>
                     </td>
 
-                    <td className="px-4 py-3">{user.email}</td>
-
-                    <td className="px-4 py-3 text-center">
-                      {user.totalRedemptions ?? 0}
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {user.email}
                     </td>
 
-                    <td className="px-4 py-3 text-right font-semibold">
-                      {(user.totalPoints ?? 0).toLocaleString("pt-BR")}
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex rounded-lg bg-blue-50 px-3 py-1 font-semibold text-blue-700">
+                        {user.totalOrders ?? 0}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex rounded-lg bg-green-50 px-3 py-1 font-semibold text-green-700">
+                        {user.totalRedemptions ?? 0}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <span className="font-bold text-amber-600">
+                        {user.totalPoints == null
+                          ? "—"
+                          : user.totalPoints.toLocaleString("pt-BR")}
+                      </span>
                     </td>
                   </tr>
                 ))

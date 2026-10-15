@@ -84,11 +84,13 @@ export function StoreRewardsList() {
             className="border rounded-2xl overflow-hidden bg-white shadow-sm"
           >
             {/* IMAGE */}
-            <div className="h-44 bg-muted">
+            <div className="flex h-52 w-full items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              {" "}
               {reward.image ? (
                 <img
                   src={reward.image}
-                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  className="flex h-52 w-full scale-110 rounded-2xl object-contain transition-transform duration-300 hover:scale-125"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

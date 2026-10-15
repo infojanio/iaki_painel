@@ -177,12 +177,14 @@ export function RedemptionHistory() {
           >
             {/* IMAGE */}
 
-            <div className="h-44 bg-muted">
+            <div className="flex h-52 w-full items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              {" "}
               {redemption.reward?.image ? (
                 <img
                   src={redemption.reward.image}
                   alt={redemption.reward.title}
-                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  className="h-full w-full scale-110 rounded-2xl object-contain transition-transform duration-300 hover:scale-125"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

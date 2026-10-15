@@ -119,71 +119,84 @@ export function ProductList() {
 
       {/* LISTA */}
       {filteredProducts?.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">
+        <div className="py-10 text-center text-gray-500">
           Nenhum produto encontrado
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filteredProducts?.map((product) => (
             <div
               key={product.id}
-              className="bg-white border rounded-xl shadow-sm overflow-hidden hover:shadow-md transition"
+              className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="h-40 bg-gray-100 flex items-center justify-center p-3 overflow-hidden">
+              {/* IMAGEM */}
+              <div className="flex h-28 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-white to-gray-100 p-2">
                 {product.image ? (
                   <img
                     src={product.image}
                     alt={product.name || "Imagem do produto"}
-                    className="max-h-36 max-w-[85%] w-auto h-auto object-contain"
+                    loading="lazy"
+                    className="h-full w-full rounded-lg object-contain transition-transform duration-300 hover:scale-110"
                   />
                 ) : (
-                  <span className="text-gray-400 text-sm">Sem imagem</span>
+                  <span className="text-xs text-gray-400">Sem imagem</span>
                 )}
               </div>
 
-              <div className="p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <h2 className="font-semibold text-lg">{product.name}</h2>
+              {/* INFORMAÇÕES */}
+              <div className="flex flex-1 flex-col gap-2 p-3">
+                {/* NOME */}
+                <h2
+                  className="line-clamp-2 min-h-9 text-sm font-semibold leading-5 text-gray-800"
+                  title={product.name}
+                >
+                  {product.name}
+                </h2>
 
+                {/* STATUS */}
+                <div>
                   <span
-                    className={`text-xs px-2 py-1 rounded ${
+                    className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
                       product.status
                         ? "bg-green-100 text-green-700"
-                        : "bg-gray-200 text-gray-600"
+                        : "bg-gray-100 text-gray-500"
                     }`}
                   >
                     {product.status ? "Ativo" : "Inativo"}
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-500 line-clamp-2">
+                {/* DESCRIÇÃO */}
+                <p className="line-clamp-2 min-h-8 text-xs text-gray-500">
                   {product.description}
                 </p>
 
-                <div className="flex justify-between text-sm mt-2">
-                  <span className="font-medium">
-                    R$ {product.price.toFixed(2)}
-                  </span>
-
-                  <span
-                    className={`${
-                      product.quantity <= product.minStock
-                        ? "text-red-500"
-                        : "text-gray-600"
-                    }`}
-                  >
-                    Estoque: {product.quantity}
-                  </span>
+                {/* PREÇO */}
+                <div className="text-base font-bold text-gray-900">
+                  R$ {product.price.toFixed(2)}
                 </div>
 
-                <div className="text-xs text-blue-600 font-medium">
+                {/* ESTOQUE */}
+                <div
+                  className={`text-xs ${
+                    product.quantity <= product.minStock
+                      ? "font-medium text-red-500"
+                      : "text-gray-500"
+                  }`}
+                >
+                  Estoque: {product.quantity}
+                </div>
+
+                {/* DESCONTO */}
+                <div className="text-xs font-medium text-blue-600">
                   Desconto: {product.cashbackPercentage}%
                 </div>
 
-                <div className="flex justify-between mt-4">
+                {/* AÇÕES */}
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-gray-100 pt-2">
                   <button
                     onClick={() => navigate(`/products/edit/${product.id}`)}
-                    className="text-blue-600 text-sm hover:underline"
+                    className="text-xs font-medium text-blue-600 hover:underline"
                   >
                     Editar
                   </button>
@@ -196,7 +209,7 @@ export function ProductList() {
                         });
                       }
                     }}
-                    className="text-red-600 text-sm hover:underline"
+                    className="text-xs font-medium text-red-600 hover:underline"
                   >
                     Desativar
                   </button>
