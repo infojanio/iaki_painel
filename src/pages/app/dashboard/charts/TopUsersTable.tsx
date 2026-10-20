@@ -32,8 +32,6 @@ export function TopUsersTable() {
                 <th className="px-4 py-3 text-center">Pedidos</th>
 
                 <th className="px-4 py-3 text-center">Resgates</th>
-
-                <th className="px-4 py-3 text-right">Saldo de pontos</th>
               </tr>
             </thead>
 
@@ -85,14 +83,6 @@ export function TopUsersTable() {
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex rounded-lg bg-green-50 px-3 py-1 font-semibold text-green-700">
                         {user.totalRedemptions ?? 0}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-bold text-amber-600">
-                        {user.totalPoints == null
-                          ? "—"
-                          : user.totalPoints.toLocaleString("pt-BR")}
                       </span>
                     </td>
                   </tr>
