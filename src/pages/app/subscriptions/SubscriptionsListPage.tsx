@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+
 import {
   CheckCircle2,
   Loader2,
@@ -92,8 +92,6 @@ export function SubscriptionsListPage() {
   >(null);
 
   const [newEndDate, setNewEndDate] = useState("");
-
-  const navigate = useNavigate();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
