@@ -66,7 +66,9 @@ export function ReelNew() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold">Imagem</label>
+          <label className="block text-sm font-semibold">
+            Imagem (540x930 px)
+          </label>
           <input
             type="file"
             accept="image/*"

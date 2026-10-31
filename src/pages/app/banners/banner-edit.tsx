@@ -168,7 +168,7 @@ export function BannerEdit() {
         {/* IMAGEM */}
         <div>
           <label className="block text-sm font-semibold">
-            Imagem (740x296)
+            Imagem (1600 × 700 px)
           </label>
 
           <input

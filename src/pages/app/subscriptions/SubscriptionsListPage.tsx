@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Loader2,
@@ -91,6 +92,8 @@ export function SubscriptionsListPage() {
   >(null);
 
   const [newEndDate, setNewEndDate] = useState("");
+
+  const navigate = useNavigate();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -421,7 +424,7 @@ export function SubscriptionsListPage() {
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           <PlusCircle className="h-4 w-4" />
-          Nova assinatura
+          Escolher assinatura
         </button>
       </div>
 
@@ -589,6 +592,19 @@ export function SubscriptionsListPage() {
                         Renovar +30 dias
                       </button>
 
+                      <div className="flex flex-col items-start gap-2">
+                        {/* Seu botão atual de Renovar assinatura */}
+
+                        <button
+                          type="button"
+                          onClick={handleOpenCreateModal}
+                          className="text-blue-700 hover:underline text-left"
+                        >
+                          Trocar assinatura
+                        </button>
+                        {/* Insira aqui o botão Trocar assinatura */}
+                      </div>
+
                       <button
                         onClick={() => {
                           setSelectedSubscription(sub.id);
@@ -653,7 +669,7 @@ export function SubscriptionsListPage() {
           <Dialog.Panel className="bg-white p-6 rounded-2xl w-[520px] max-w-[92vw] space-y-5 shadow-xl">
             <div>
               <Dialog.Title className="text-lg font-bold">
-                Nova assinatura
+                Escolher assinatura
               </Dialog.Title>
 
               <p className="mt-1 text-sm text-gray-500">

@@ -92,7 +92,7 @@ export function ReelEdit() {
 
         <div>
           <label className="block text-sm font-semibold">
-            Imagem (740x296)
+            Imagem (540x930 px)
           </label>
           <input
             type="file"
