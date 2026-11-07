@@ -14,6 +14,9 @@ export interface Store {
   postalCode: string;
   cityId: string;
   createdAt?: string;
+  deliveryEnabled?: boolean;
+  deliveryWhatsapp?: string | null;
+  deliveryPaymentMethods?: DeliveryPaymentMethod[];
 }
 
 export type StoreCreatePayload = {
@@ -29,6 +32,21 @@ export type StoreCreatePayload = {
   postalCode: string;
   cityId: string;
 };
+
+export const DELIVERY_PAYMENT_METHODS = [
+  "Pix na entrega",
+  "Dinheiro na entrega",
+  "Cartão de débito na entrega",
+  "Cartão de crédito na entrega",
+] as const;
+
+export type DeliveryPaymentMethod = (typeof DELIVERY_PAYMENT_METHODS)[number];
+
+export interface StoreDeliverySettings {
+  deliveryEnabled: boolean;
+  deliveryWhatsapp: string | null;
+  deliveryPaymentMethods: DeliveryPaymentMethod[];
+}
 
 export type StoreUpdatePayload = Partial<StoreCreatePayload>;
 
@@ -60,4 +78,15 @@ export async function updateStore(
 export async function toggleStoreStatus(storeId: string) {
   const { data } = await api.patch(`/stores/${storeId}/toggle-status`);
   return data;
+}
+
+export async function updateStoreDeliverySettings(
+  storeId: string,
+  payload: StoreDeliverySettings,
+) {
+  const { data } = await api.patch<{
+    store: StoreDeliverySettings & { id: string };
+  }>(`/stores/${storeId}/delivery-settings`, payload);
+
+  return data.store;
 }

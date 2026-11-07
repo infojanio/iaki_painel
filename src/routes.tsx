@@ -86,6 +86,7 @@ import { StoreRewardEdit } from "./pages/app/store-rewards/StoreRewardEdit";
 import { RedemptionsList } from "./pages/app/redemptions/RedemptionsList";
 import { RedemptionHistory } from "./pages/app/redemptions/RedemptionHistory";
 import { AuditReport } from "./pages/app/reports/AuditReport";
+import { StoreDeliveryPage } from "./pages/app/stores/StoreDeliveryPage";
 
 export const router = createBrowserRouter([
   {
@@ -285,6 +286,16 @@ export const router = createBrowserRouter([
           </RoleGuard>
         ),
       },
+
+      {
+        path: "stores/:id/delivery",
+        element: (
+          <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+            <StoreDeliveryPage />
+          </RoleGuard>
+        ),
+      },
+
       {
         path: "stores/edit/:id",
         element: (
